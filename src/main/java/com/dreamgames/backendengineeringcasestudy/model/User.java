@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.List;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import java.util.UUID;
 @Setter
 @Entity
 @NoArgsConstructor
+@ToString
 public class User {
     @Id
     @GeneratedValue(strategy=GenerationType.UUID)
@@ -21,13 +23,12 @@ public class User {
     @JoinColumn(name = "country_id", referencedColumnName = "id")
     private Country country;
 
-    @Column(columnDefinition = "integer default 1")
-    private int level;
+    private int level = 1;
 
-    @Column(columnDefinition = "integer default 5000")
-    private int coins;
+    private int coins = 5000;
 
     @OneToMany(mappedBy = "user")
+    @ToString.Exclude
     List<UserTournamentGroup> userTournamentGroups;
 
     public User(Country country) {
