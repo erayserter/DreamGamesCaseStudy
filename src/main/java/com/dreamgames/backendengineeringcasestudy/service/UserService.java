@@ -1,5 +1,8 @@
 package com.dreamgames.backendengineeringcasestudy.service;
 
+import com.dreamgames.backendengineeringcasestudy.dto.UserProgressResponse;
+import com.dreamgames.backendengineeringcasestudy.dto.UserResponse;
+import com.dreamgames.backendengineeringcasestudy.dto.UserResponseMapper;
 import com.dreamgames.backendengineeringcasestudy.model.Country;
 import com.dreamgames.backendengineeringcasestudy.model.User;
 import com.dreamgames.backendengineeringcasestudy.repository.CountryRepository;
@@ -15,31 +18,41 @@ public class UserService {
     private final UserRepository userRepository;
     private final CountryRepository countryRepository;
     private final TournamentService tournamentService;
+    private final UserResponseMapper userResponseMapper;
 
     public UserService(UserRepository userRepository,
                        CountryRepository countryRepository,
-                       TournamentService tournamentService) {
+                       TournamentService tournamentService,
+                       UserResponseMapper userResponseMapper) {
         this.userRepository = userRepository;
         this.countryRepository = countryRepository;
         this.tournamentService = tournamentService;
+        this.userResponseMapper = userResponseMapper;
     }
 
-    public User create() {
+    public UserResponse create() {
         Country country = countryRepository.getRandomCountry();
-        User user = new User(country);
-        return userRepository.save(user);
+        User entity = new User(country);
+        System.out.println("entity: " + entity);
+        User user = userRepository.save(entity);
+        return userResponseMapper.apply(user);
     }
 
-    public void updateLevel(UUID userId) {
+    public UserProgressResponse updateLevel(UUID userId) {
         User user = userRepository
                 .findById(userId)
                 .orElseThrow(() -> new ObjectNotFoundException(userId, User.class.getName()));
         user.setLevel(user.getLevel() + 1);
+        user.setCoins(user.getCoins() + 25);
 
         if (tournamentService.isInTournament(user)) {
             tournamentService.updateUserLevel(user);
         }
 
-        userRepository.save(user);
+        user = userRepository.save(user);
+        return new UserProgressResponse(
+                user.getLevel(),
+                user.getCoins()
+        );
     }
 }

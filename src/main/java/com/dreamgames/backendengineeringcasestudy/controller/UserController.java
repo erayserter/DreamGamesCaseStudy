@@ -1,5 +1,7 @@
 package com.dreamgames.backendengineeringcasestudy.controller;
 
+import com.dreamgames.backendengineeringcasestudy.dto.UserProgressResponse;
+import com.dreamgames.backendengineeringcasestudy.dto.UserResponse;
 import com.dreamgames.backendengineeringcasestudy.model.User;
 import com.dreamgames.backendengineeringcasestudy.service.UserService;
 import org.springframework.web.bind.annotation.*;
@@ -17,12 +19,12 @@ public class UserController {
     }
 
     @PostMapping
-    public User createUser() {
+    public UserResponse createUser() {
         return userService.create();
     }
 
     @PostMapping("{id}/updateLevel")
-    public void updateLevel(@PathVariable UUID id) {
-        userService.updateLevel(id);
+    public UserProgressResponse updateLevel(@PathVariable UUID id) {
+        return userService.updateLevel(id);
     }
 }
