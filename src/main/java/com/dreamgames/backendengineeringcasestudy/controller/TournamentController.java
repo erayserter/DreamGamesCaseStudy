@@ -2,10 +2,9 @@ package com.dreamgames.backendengineeringcasestudy.controller;
 
 import com.dreamgames.backendengineeringcasestudy.model.User;
 import com.dreamgames.backendengineeringcasestudy.service.TournamentService;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/tournaments")
@@ -18,14 +17,12 @@ public class TournamentController {
     }
 
     @PostMapping("/enter")
-    public void enterTournament() {
-        User user = new User();
-        tournamentService.enterTournament(user);
+    public void enterTournament(@RequestBody UUID userId) {
+        tournamentService.enterTournament(userId);
     }
 
     @PostMapping("{id}/claim-reward")
-    public User claimReward(@PathVariable Long id) {
-        User user = new User();
-        return tournamentService.claimReward(user, id);
+    public User claimReward(@PathVariable Long id, @RequestBody UUID userId) {
+        return tournamentService.claimReward(id, userId);
     }
 }

@@ -20,5 +20,4 @@ public class TournamentGroup {
 
     @OneToMany(mappedBy = "tournamentGroup")
     private List<UserTournamentGroup> userTournamentGroups;
-
 }

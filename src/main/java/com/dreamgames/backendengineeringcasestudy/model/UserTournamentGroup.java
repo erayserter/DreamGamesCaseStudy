@@ -25,6 +25,8 @@ public class UserTournamentGroup {
     @Column(columnDefinition = "integer default 0")
     private int score;
 
+    private int rank;
+
     @Column(columnDefinition = "boolean default false")
     private boolean isRewardClaimed;
 

@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class TournamentService {
@@ -25,21 +26,26 @@ public class TournamentService {
     private final UserTournamentGroupRepository userTournamentGroupRepository;
     private final UserRepository userRepository;
 
-    public TournamentService(TournamentRepository tournamentRepository, UserTournamentGroupRepository userTournamentGroupRepository,
+    public TournamentService(TournamentRepository tournamentRepository,
+                             UserTournamentGroupRepository userTournamentGroupRepository,
                              UserRepository userRepository) {
         this.tournamentRepository = tournamentRepository;
         this.userTournamentGroupRepository = userTournamentGroupRepository;
         this.userRepository = userRepository;
     }
 
-    public void enterTournament(User user) {
-        if (user.getLevel() < TOURNAMENT_LEVEL_REQUIREMENT) {
+    public void enterTournament(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ObjectNotFoundException(userId, User.class.getName()));
+        List<UserTournamentGroup> unclaimedRewards = userTournamentGroupRepository
+                .findUserTournamentGroupsByUserAndRankLessThanAndRewardClaimed(user, 3, false);
+
+        if (user.getLevel() < TOURNAMENT_LEVEL_REQUIREMENT)
             throw new IllegalArgumentException("User level is not enough to enter the tournament");
-        }
-        if (user.getCoins() < TOURNAMENT_ENTRY_FEE) {
+        if (user.getCoins() < TOURNAMENT_ENTRY_FEE)
             throw new IllegalArgumentException("User does not have enough coins to enter the tournament");
-        }
-        // TODO: implement has unclaimed reward check
+        if (!unclaimedRewards.isEmpty())
+            throw new IllegalArgumentException("User has unclaimed rewards");
 
         Tournament tournament = getCurrentTournament()
                 .orElseThrow(() -> new ObjectNotFoundException(Tournament.class, "No ongoing tournament"));
@@ -50,26 +56,25 @@ public class TournamentService {
         userTournamentGroupRepository.save(userTournamentGroup);
     }
 
-    public User claimReward(User user, Long id) {
+    public User claimReward(Long id, UUID userId) {
         UserTournamentGroup userTournamentGroup = userTournamentGroupRepository
-                .findByUserIdAndTournamentId(user.getId(), id)
-                .orElseThrow(() -> new ObjectNotFoundException(user.getId(), UserTournamentGroup.class.getName()));
+                .findByUserIdAndTournamentId(userId, id)
+                .orElseThrow(() -> new ObjectNotFoundException(userId, UserTournamentGroup.class.getName()));
+        Tournament tournament = userTournamentGroup.getTournamentGroup().getTournament();
+        User user = userTournamentGroup.getUser();
 
-        if (userTournamentGroup.isRewardClaimed()) {
+        if (userTournamentGroup.isRewardClaimed())
             throw new IllegalArgumentException("Reward already claimed");
-        }
+        if (tournament.getEndDateTime().after(Date.from(Instant.now())))
+            throw new IllegalArgumentException("Tournament has not ended yet");
+        if (!isEligibleForReward(userTournamentGroup.getRank()))
+            throw new IllegalArgumentException("User is not eligible for a reward");
 
-        TournamentGroup tournamentGroup = userTournamentGroup.getTournamentGroup();
-        List<UserTournamentGroup> utgs = tournamentGroup.getUserTournamentGroups();
-        utgs = utgs.stream().sorted((utg1, utg2) -> utg2.getScore() - utg1.getScore()).toList();
-        int rank = utgs.indexOf(userTournamentGroup);
 
-        if (rank == 1)  // TODO: implement reward calculation
+        if (userTournamentGroup.getRank() == 1)  // TODO: implement reward calculation
             user.setCoins(user.getCoins() + 10000);
-        else if (rank == 2)
+        else if (userTournamentGroup.getRank() == 2)
             user.setCoins(user.getCoins() + 5000);
-        else
-            throw new IllegalArgumentException("User did not win a reward");
 
         userTournamentGroup.setRewardClaimed(true);
         userTournamentGroupRepository.save(userTournamentGroup);
@@ -85,6 +90,10 @@ public class TournamentService {
         return userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()).isPresent();
     }
 
+    public boolean isEligibleForReward(int rank) {
+        return rank <= 3;
+    }
+
     public Optional<Tournament> getCurrentTournament() {
         Instant now = Instant.now();
         Date dateNow = Date.from(now);
@@ -97,6 +106,19 @@ public class TournamentService {
         UserTournamentGroup userTournamentGroup = userTournamentGroupRepository
                 .findByUserIdAndTournamentId(user.getId(), tournament.getId())
                 .orElseThrow(() -> new ObjectNotFoundException(user.getId(), UserTournamentGroup.class.getName()));
+
+        if (userTournamentGroup.getRank() > 1) {
+            UserTournamentGroup rival = userTournamentGroupRepository.findByTournamentGroupAndRank(
+                    userTournamentGroup.getTournamentGroup(),
+                    userTournamentGroup.getRank() - 1);
+
+            if (rival.getScore() < userTournamentGroup.getScore()) {
+                userTournamentGroup.setRank(userTournamentGroup.getRank() - 1);
+                rival.setRank(rival.getRank() + 1);
+                userTournamentGroupRepository.save(rival);
+            }
+        }
+
         userTournamentGroup.setScore(userTournamentGroup.getScore() + 1);
         userTournamentGroupRepository.save(userTournamentGroup);
     }
