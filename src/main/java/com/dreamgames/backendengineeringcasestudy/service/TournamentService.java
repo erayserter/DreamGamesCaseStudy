@@ -1,7 +1,6 @@
 package com.dreamgames.backendengineeringcasestudy.service;
 
 import com.dreamgames.backendengineeringcasestudy.model.Tournament;
-import com.dreamgames.backendengineeringcasestudy.model.TournamentGroup;
 import com.dreamgames.backendengineeringcasestudy.model.User;
 import com.dreamgames.backendengineeringcasestudy.model.UserTournamentGroup;
 import com.dreamgames.backendengineeringcasestudy.repository.TournamentRepository;
