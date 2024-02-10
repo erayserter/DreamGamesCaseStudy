@@ -1,8 +1,10 @@
 package com.dreamgames.backendengineeringcasestudy.service;
 
 import com.dreamgames.backendengineeringcasestudy.model.Tournament;
+import com.dreamgames.backendengineeringcasestudy.model.TournamentGroup;
 import com.dreamgames.backendengineeringcasestudy.model.User;
 import com.dreamgames.backendengineeringcasestudy.model.UserTournamentGroup;
+import com.dreamgames.backendengineeringcasestudy.repository.TournamentGroupRepository;
 import com.dreamgames.backendengineeringcasestudy.repository.TournamentRepository;
 import com.dreamgames.backendengineeringcasestudy.repository.UserRepository;
 import com.dreamgames.backendengineeringcasestudy.repository.UserTournamentGroupRepository;
@@ -22,13 +24,16 @@ public class TournamentService {
     public final static int TOURNAMENT_ENTRY_FEE = 1000;
 
     private final TournamentRepository tournamentRepository;
+    private final TournamentGroupRepository tournamentGroupRepository;
     private final UserTournamentGroupRepository userTournamentGroupRepository;
     private final UserRepository userRepository;
 
     public TournamentService(TournamentRepository tournamentRepository,
+                             TournamentGroupRepository tournamentGroupRepository,
                              UserTournamentGroupRepository userTournamentGroupRepository,
                              UserRepository userRepository) {
         this.tournamentRepository = tournamentRepository;
+        this.tournamentGroupRepository = tournamentGroupRepository;
         this.userTournamentGroupRepository = userTournamentGroupRepository;
         this.userRepository = userRepository;
     }
@@ -48,10 +53,19 @@ public class TournamentService {
 
         Tournament tournament = getCurrentTournament()
                 .orElseThrow(() -> new ObjectNotFoundException(Tournament.class, "No ongoing tournament"));
+        TournamentGroup tournamentGroup = tournamentGroupRepository
+                .findByTournamentAndUserTournamentGroups_User_CountryNot(tournament, user.getCountry())
+                .orElse(new TournamentGroup(tournament));
+
+        if (tournamentGroup.getUserTournamentGroups().size() >= TOURNAMENT_GROUP_SIZE) {
+            Date now = Date.from(Instant.now());
+            tournamentGroup.setStartDate(now);
+            tournamentGroupRepository.save(tournamentGroup);
+        }
+
         UserTournamentGroup userTournamentGroup = new UserTournamentGroup();
         userTournamentGroup.setUser(user);
         userTournamentGroup.setEnteredAt(Date.from(Instant.now()));
-        userTournamentGroup.setTournamentGroup(tournament.getGroups().get(0));  // TODO: implement group selection
         userTournamentGroupRepository.save(userTournamentGroup);
     }
 
@@ -81,12 +95,14 @@ public class TournamentService {
         return user;
     }
 
-    public boolean isInTournament(User user) {
+    public boolean isInActiveTournament(User user) {
         Tournament tournament = getCurrentTournament().orElse(null);
         if (tournament == null) {
             return false;
         }
-        return userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()).isPresent();
+        Optional<UserTournamentGroup> userTournamentGroup = userTournamentGroupRepository
+                .findByUserIdAndTournamentId(user.getId(), tournament.getId());
+        return userTournamentGroup.isPresent() && userTournamentGroup.get().getTournamentGroup().getStartDate() != null;
     }
 
     public boolean isEligibleForReward(int rank) {

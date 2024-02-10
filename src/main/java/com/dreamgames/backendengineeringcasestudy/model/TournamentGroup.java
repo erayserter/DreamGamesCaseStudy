@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Date;
 import java.util.List;
 
 @Entity
@@ -20,4 +21,11 @@ public class TournamentGroup {
 
     @OneToMany(mappedBy = "tournamentGroup")
     private List<UserTournamentGroup> userTournamentGroups;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date startDate;
+
+    public TournamentGroup(Tournament tournament) {
+        this.tournament = tournament;
+    }
 }

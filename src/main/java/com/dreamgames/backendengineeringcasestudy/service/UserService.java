@@ -45,7 +45,7 @@ public class UserService {
         user.setLevel(user.getLevel() + 1);
         user.setCoins(user.getCoins() + 25);
 
-        if (tournamentService.isInTournament(user)) {
+        if (tournamentService.isInActiveTournament(user)) {
             tournamentService.updateUserLevel(user);
         }
 
