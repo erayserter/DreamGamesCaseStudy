@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,7 +20,16 @@ public interface UserTournamentGroupRepository extends JpaRepository<UserTournam
             "WHERE utg.user.id = :userId AND utg.tournamentGroup.tournament.id = :tournamentId")
     Optional<UserTournamentGroup> findByUserIdAndTournamentId(@Param("userId") UUID userId,
                                                               @Param("tournamentId") Long tournamentId);
-    UserTournamentGroup findByTournamentGroupAndRank(TournamentGroup tournamentGroup, int rank);
-    List<UserTournamentGroup> findUserTournamentGroupsByUserAndRankLessThanAndRewardClaimed(User user, int rank, boolean rewardClaimed);
+    UserTournamentGroup findByTournamentGroupAndRanking(TournamentGroup tournamentGroup, int rank);
 
+    @Query("SELECT utg " +
+            "FROM UserTournamentGroup utg " +
+            "WHERE utg.user.id = :userId " +
+            "AND utg.ranking = :rank " +
+            "AND utg.isRewardClaimed = :isRewardClaimed " +
+            "AND utg.tournamentGroup.tournament.endDateTime < :date")
+    List<UserTournamentGroup> findPreviousUnclaimedTournamentRewards(@Param("userId") UUID userId,
+                                                                     @Param("rank") int rank,
+                                                                     @Param("isRewardClaimed") boolean isRewardClaimed,
+                                                                     @Param("date") Date date);
 }
