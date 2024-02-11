@@ -20,7 +20,7 @@ public interface UserTournamentGroupRepository extends JpaRepository<UserTournam
             "WHERE utg.user.id = :userId AND utg.tournamentGroup.tournament.id = :tournamentId")
     Optional<UserTournamentGroup> findByUserIdAndTournamentId(@Param("userId") UUID userId,
                                                               @Param("tournamentId") Long tournamentId);
-    UserTournamentGroup findByTournamentGroupAndRanking(TournamentGroup tournamentGroup, int rank);
+    Optional<UserTournamentGroup> findByTournamentGroupAndRanking(TournamentGroup tournamentGroup, int rank);
 
     @Query("SELECT utg " +
             "FROM UserTournamentGroup utg " +

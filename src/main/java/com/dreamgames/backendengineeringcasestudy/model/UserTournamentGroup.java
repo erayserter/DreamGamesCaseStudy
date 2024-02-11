@@ -2,13 +2,16 @@ package com.dreamgames.backendengineeringcasestudy.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.Instant;
 import java.util.Date;
 
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
 public class UserTournamentGroup {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -22,14 +25,20 @@ public class UserTournamentGroup {
     @JoinColumn(name = "tournament_group_id", referencedColumnName = "id")
     private TournamentGroup tournamentGroup;
 
-    @Column(columnDefinition = "integer default 0")
-    private int score;
+    private int score = 0;
 
     private int ranking;
 
-    @Column(columnDefinition = "boolean default false")
-    private boolean isRewardClaimed;
+    private boolean isRewardClaimed = false;
 
     @Temporal(TemporalType.TIMESTAMP)
-    private Date enteredAt;
+    private Date enteredAt = Date.from(Instant.now());
+
+    public UserTournamentGroup(User user,
+                               TournamentGroup tournamentGroup,
+                               int ranking) {
+        this.user = user;
+        this.tournamentGroup = tournamentGroup;
+        this.ranking = ranking;
+    }
 }

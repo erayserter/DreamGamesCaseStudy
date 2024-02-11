@@ -152,7 +152,8 @@ public class TournamentService {
         if (userTournamentGroup.getRanking() > 1) {
             UserTournamentGroup rival = userTournamentGroupRepository.findByTournamentGroupAndRanking(
                     userTournamentGroup.getTournamentGroup(),
-                    userTournamentGroup.getRanking() - 1);
+                    userTournamentGroup.getRanking() - 1)
+                    .orElseThrow(() -> new ObjectNotFoundException(userTournamentGroup.getRanking() - 1, UserTournamentGroup.class.getName()));
 
             if (rival.getScore() < userTournamentGroup.getScore()) {
                 userTournamentGroup.setRanking(userTournamentGroup.getRanking() - 1);
