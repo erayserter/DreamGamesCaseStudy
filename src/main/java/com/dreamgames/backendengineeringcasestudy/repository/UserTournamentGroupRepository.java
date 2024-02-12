@@ -1,5 +1,6 @@
 package com.dreamgames.backendengineeringcasestudy.repository;
 
+import com.dreamgames.backendengineeringcasestudy.dto.CountryTournamentScoreResponse;
 import com.dreamgames.backendengineeringcasestudy.model.TournamentGroup;
 import com.dreamgames.backendengineeringcasestudy.model.UserTournamentGroup;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -31,4 +32,17 @@ public interface UserTournamentGroupRepository extends JpaRepository<UserTournam
                                                                      @Param("rank") int rank,
                                                                      @Param("isRewardClaimed") boolean isRewardClaimed,
                                                                      @Param("date") Date date);
+
+    @Query("SELECT utg " +
+            "FROM UserTournamentGroup utg " +
+            "WHERE utg.tournamentGroup.id = :id " +
+            "ORDER BY utg.score DESC")
+    List<UserTournamentGroup> orderGroupByScores(Long id);
+
+    @Query("SELECT new com.dreamgames.backendengineeringcasestudy.dto.CountryTournamentScoreResponse(utg.user.country.name, SUM(utg.score)) " +
+            "FROM UserTournamentGroup utg " +
+            "WHERE utg.tournamentGroup.tournament.id = :tournamentId " +
+            "GROUP BY utg.user.country.name " +
+            "ORDER BY SUM(utg.score) DESC")
+    List<CountryTournamentScoreResponse> findCountryScoresByTournamentId(Long tournamentId);
 }

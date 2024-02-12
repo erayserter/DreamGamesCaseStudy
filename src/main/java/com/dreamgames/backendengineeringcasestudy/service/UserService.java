@@ -10,7 +10,6 @@ import com.dreamgames.backendengineeringcasestudy.repository.UserRepository;
 import org.hibernate.ObjectNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Service

@@ -73,10 +73,12 @@ public class TournamentService {
             tournamentGroup.setStartDate(now);
         }
         tournamentGroup = tournamentGroupRepository.save(tournamentGroup);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup();
-        userTournamentGroup.setUser(user);
-        userTournamentGroup.setTournamentGroup(tournamentGroup);
-        userTournamentGroup.setRanking(tournamentGroup.getUserTournamentGroups().size() + 1);
+        UserTournamentGroup userTournamentGroup =
+                new UserTournamentGroup(
+                        user,
+                        tournamentGroup,
+                        tournamentGroup.getUserTournamentGroups().size() + 1
+                );
         userTournamentGroup.setEnteredAt(Date.from(Instant.now()));
         userTournamentGroupRepository.save(userTournamentGroup);
     }
@@ -139,7 +141,7 @@ public class TournamentService {
         } else if (dateNow.after(startDate) && dateNow.before(finishDate)) {
             return tournamentRepository.save(new Tournament(startDate, finishDate));
         } else {
-            throw new ObjectNotFoundException(dateNow, Tournament.class.getName());
+            throw new IllegalArgumentException("No active tournament");
         }
     }
 
