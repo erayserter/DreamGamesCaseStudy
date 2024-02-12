@@ -10,10 +10,12 @@ import com.dreamgames.backendengineeringcasestudy.repository.UserRepository;
 import org.hibernate.ObjectNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class UserService {
+    public final static int LEVEL_UP_REWARD = 25;
 
     private final UserRepository userRepository;
     private final CountryRepository countryRepository;
@@ -33,7 +35,6 @@ public class UserService {
     public UserResponse create() {
         Country country = countryRepository.getRandomCountry();
         User entity = new User(country);
-        System.out.println("entity: " + entity);
         User user = userRepository.save(entity);
         return userResponseMapper.apply(user);
     }
@@ -43,13 +44,13 @@ public class UserService {
                 .findById(userId)
                 .orElseThrow(() -> new ObjectNotFoundException(userId, User.class.getName()));
         user.setLevel(user.getLevel() + 1);
-        user.setCoins(user.getCoins() + 25);
+        user.setCoins(user.getCoins() + LEVEL_UP_REWARD);
 
         if (tournamentService.isInActiveTournament(user)) {
             tournamentService.updateUserLevel(user);
         }
 
-        user = userRepository.save(user);
+        userRepository.save(user);
         return new UserProgressResponse(
                 user.getLevel(),
                 user.getCoins()
