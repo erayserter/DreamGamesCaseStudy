@@ -25,7 +25,7 @@ class TournamentRepositoryTest {
     }
 
     @Test
-    void itShouldFindOngoingTournament() {
+    void shouldFindOngoingTournament() {
         // given
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
         ZonedDateTime start = now.minusDays(1);
@@ -40,7 +40,7 @@ class TournamentRepositoryTest {
     }
 
     @Test
-    void itShouldNotFindOngoingTournament() {
+    void shouldNotFindOngoingTournament() {
         // given
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
         ZonedDateTime start = now.minusDays(2);

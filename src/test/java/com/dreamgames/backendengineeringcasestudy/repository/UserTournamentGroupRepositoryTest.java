@@ -37,7 +37,7 @@ class UserTournamentGroupRepositoryTest {
     }
 
     @Test
-    void itShouldFindByUserIdAndTournamentId() {
+    void shouldFindByUserIdAndTournamentId() {
         // given
         User user = new User();
         user = userRepository.save(user);
@@ -57,7 +57,7 @@ class UserTournamentGroupRepositoryTest {
     }
 
     @Test
-    void itShouldNotFindByUserIdAndTournamentId() {
+    void shouldNotFindByUserIdAndTournamentId() {
         // given
         User user = new User();
         user = userRepository.save(user);
@@ -77,7 +77,7 @@ class UserTournamentGroupRepositoryTest {
     }
 
     @Test
-    void itShouldFindByTournamentGroupAndRanking() {
+    void shouldFindByTournamentGroupAndRanking() {
         // given
         User user = new User();
         user = userRepository.save(user);
@@ -98,7 +98,7 @@ class UserTournamentGroupRepositoryTest {
     }
 
     @Test
-    void itShouldNotFindByTournamentGroupAndRanking() {
+    void shouldNotFindByTournamentGroupAndRanking() {
         // given
         User user = new User();
         user = userRepository.save(user);
@@ -118,7 +118,7 @@ class UserTournamentGroupRepositoryTest {
     }
 
     @Test
-    void itShouldFindPreviousUnclaimedTournamentRewards() {
+    void shouldFindPreviousUnclaimedTournamentRewards() {
         // given
         User user = new User();
         user = userRepository.save(user);
@@ -146,7 +146,7 @@ class UserTournamentGroupRepositoryTest {
     }
 
     @Test
-    void itShouldNotFindPreviousUnclaimedTournamentRewards() {
+    void shouldNotFindPreviousUnclaimedTournamentRewards() {
         // given
         User user = new User();
         user = userRepository.save(user);

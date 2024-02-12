@@ -21,7 +21,7 @@ class CountryRepositoryTest {
     }
 
     @Test
-    void itShouldGetRandomCountry() {
+    void shouldGetRandomCountry() {
         // given
         String[][] countries = {
                 {"Turkey", "TR"},

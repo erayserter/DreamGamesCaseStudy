@@ -45,7 +45,7 @@ class UserServiceTest {
 
 
     @Test
-    void itShouldCreate() {
+    void shouldCreate() {
         // given
         Country country = new Country("TR", "Turkey");
         User user = new User(country);
@@ -67,7 +67,7 @@ class UserServiceTest {
     }
 
     @Test
-    void itShouldUpdateLevelWhenNotInTournament() {
+    void shouldUpdateLevelWhenNotInTournament() {
         // given
         int initialLevel = 1;
         int initialCoins = 100;
@@ -93,7 +93,7 @@ class UserServiceTest {
     }
 
     @Test
-    void itShouldUpdateLevelWhenInTournament() {
+    void shouldUpdateLevelWhenInTournament() {
         // given
         int initialLevel = 1;
         int initialCoins = 100;
@@ -123,7 +123,7 @@ class UserServiceTest {
     }
 
     @Test
-    void willThrowWhenUserNotFound() {
+    void willThrowWhenUpdateLevelUserNotFound() {
         // given
         UUID userId = UUID.randomUUID();
         given(userRepository.findById(userId)).willReturn(Optional.empty());
