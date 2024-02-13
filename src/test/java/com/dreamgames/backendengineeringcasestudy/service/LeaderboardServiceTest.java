@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -75,7 +76,9 @@ class LeaderboardServiceTest {
 
         // when
         // then
-        assertThrows(IllegalArgumentException.class, () -> underTest.getGroupRank(userId, tournamentId));
+        assertThatThrownBy(() -> underTest.getGroupRank(userId, tournamentId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("This user is not attended to this tournament");
     }
 
     @Test

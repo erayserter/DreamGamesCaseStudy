@@ -1,9 +1,7 @@
 package com.dreamgames.backendengineeringcasestudy.repository;
 
-import com.dreamgames.backendengineeringcasestudy.model.Tournament;
-import com.dreamgames.backendengineeringcasestudy.model.TournamentGroup;
-import com.dreamgames.backendengineeringcasestudy.model.User;
-import com.dreamgames.backendengineeringcasestudy.model.UserTournamentGroup;
+import com.dreamgames.backendengineeringcasestudy.dto.CountryTournamentScoreResponse;
+import com.dreamgames.backendengineeringcasestudy.model.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,11 +27,16 @@ class UserTournamentGroupRepositoryTest {
     private TournamentRepository tournamentRepository;
     @Autowired
     private TournamentGroupRepository tournamentGroupRepository;
+    @Autowired
+    private CountryRepository countryRepository;
 
     @AfterEach
     void tearDown() {
         underTest.deleteAll();
         userRepository.deleteAll();
+        tournamentRepository.deleteAll();
+        tournamentGroupRepository.deleteAll();
+        countryRepository.deleteAll();
     }
 
     @Test
@@ -162,5 +165,56 @@ class UserTournamentGroupRepositoryTest {
 
         // then
         assertThat(expected).isEmpty();
+    }
+
+    @Test
+    void shouldOrderGroupByScores() {
+        // given
+        User user = new User();
+        User anotherUser = new User();
+        user = userRepository.save(user);
+        anotherUser = userRepository.save(anotherUser);
+        Tournament tournament = new Tournament();
+        tournament = tournamentRepository.save(tournament);
+        TournamentGroup tournamentGroup = new TournamentGroup(tournament);
+        tournamentGroup = tournamentGroupRepository.save(tournamentGroup);
+        UserTournamentGroup userTournamentGroup1 = new UserTournamentGroup(user, tournamentGroup, 2);
+        userTournamentGroup1.setScore(10);
+        UserTournamentGroup userTournamentGroup2 = new UserTournamentGroup(anotherUser, tournamentGroup, 1);
+        userTournamentGroup2.setScore(20);
+        underTest.save(userTournamentGroup1);
+        underTest.save(userTournamentGroup2);
+
+        // when
+        List<UserTournamentGroup> expected = underTest.orderGroupByScores(tournamentGroup.getId());
+
+        // then
+        assertThat(expected).isNotEmpty();
+        assertThat(expected.get(0)).isEqualTo(userTournamentGroup2);
+        assertThat(expected.get(1)).isEqualTo(userTournamentGroup1);
+    }
+
+    @Test
+    void shouldFindCountryScoresByTournamentId() {
+        // given
+        Country country = new Country("TR", "Turkey");
+        country = countryRepository.save(country);
+        User user = new User(country);
+        user = userRepository.save(user);
+        Tournament tournament = new Tournament();
+        tournament = tournamentRepository.save(tournament);
+        TournamentGroup tournamentGroup = new TournamentGroup(tournament);
+        tournamentGroup = tournamentGroupRepository.save(tournamentGroup);
+        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup, 3);
+        userTournamentGroup.setScore(10);
+        underTest.save(userTournamentGroup);
+
+        // when
+        List<CountryTournamentScoreResponse> expected = underTest.findCountryScoresByTournamentId(tournament.getId());
+
+        // then
+        assertThat(expected).isNotEmpty();
+        assertThat(expected.get(0).country()).isEqualTo(user.getCountry().getName());
+        assertThat(expected.get(0).score()).isEqualTo(10);
     }
 }
