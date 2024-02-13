@@ -5,8 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
-
 @Getter
 @Setter
 @Entity
@@ -19,9 +17,6 @@ public class Country {
     private String code;
 
     private String name;
-
-    @OneToMany(mappedBy = "country")
-    private List<User> users;
 
     public Country(String code, String name) {
         this.code = code;
