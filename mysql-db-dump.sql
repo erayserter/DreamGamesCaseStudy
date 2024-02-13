@@ -1,6 +1,12 @@
-CREATE TABLE if not exists example_table (
+CREATE TABLE if not exists country (
     id INT PRIMARY KEY,
-    name VARCHAR(255)
+    code VARCHAR(5),
+    name VARCHAR(100)
 );
 
-INSERT INTO `example_table` (`id`, `name`) VALUES (1, 'example-1'), (2, 'example-2');
+INSERT INTO `country` (`id`, `code`, `name`)
+VALUES (1, 'TR', 'Turkey'),
+       (2, 'US', 'The United States'),
+       (3, 'GB', 'The United Kingdom'),
+       (4, 'FR', 'France'),
+       (5, 'DE', 'Germany');
