@@ -31,11 +31,8 @@ public class Tournament {
     private int entryFee;
 
     @OneToMany(mappedBy = "tournament")
-    private List<TournamentGroup> groups;
+    private List<RewardBucket> rewardBuckets;
 
-    public Tournament(Date startDateTime, Date endDateTime, int groupSizes) {
-        this.startDateTime = startDateTime;
-        this.endDateTime = endDateTime;
-        this.groupSizes = groupSizes;
-    }
+    @OneToMany(mappedBy = "tournament")
+    private List<TournamentGroup> groups;
 }

@@ -2,14 +2,8 @@ package com.dreamgames.backendengineeringcasestudy.service;
 
 import com.dreamgames.backendengineeringcasestudy.exception.BadRequestException;
 import com.dreamgames.backendengineeringcasestudy.exception.EntityNotFoundException;
-import com.dreamgames.backendengineeringcasestudy.model.Tournament;
-import com.dreamgames.backendengineeringcasestudy.model.TournamentGroup;
-import com.dreamgames.backendengineeringcasestudy.model.User;
-import com.dreamgames.backendengineeringcasestudy.model.UserTournamentGroup;
-import com.dreamgames.backendengineeringcasestudy.repository.TournamentGroupRepository;
-import com.dreamgames.backendengineeringcasestudy.repository.TournamentRepository;
-import com.dreamgames.backendengineeringcasestudy.repository.UserRepository;
-import com.dreamgames.backendengineeringcasestudy.repository.UserTournamentGroupRepository;
+import com.dreamgames.backendengineeringcasestudy.model.*;
+import com.dreamgames.backendengineeringcasestudy.repository.*;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -31,15 +25,18 @@ public class TournamentService {
     private final TournamentRepository tournamentRepository;
     private final TournamentGroupRepository tournamentGroupRepository;
     private final UserTournamentGroupRepository userTournamentGroupRepository;
+    private final RewardBucketRepository rewardBucketRepository;
     private final UserRepository userRepository;
 
     public TournamentService(TournamentRepository tournamentRepository,
                              TournamentGroupRepository tournamentGroupRepository,
                              UserTournamentGroupRepository userTournamentGroupRepository,
+                             RewardBucketRepository rewardBucketRepository,
                              UserRepository userRepository) {
         this.tournamentRepository = tournamentRepository;
         this.tournamentGroupRepository = tournamentGroupRepository;
         this.userTournamentGroupRepository = userTournamentGroupRepository;
+        this.rewardBucketRepository = rewardBucketRepository;
         this.userRepository = userRepository;
     }
 
@@ -101,17 +98,16 @@ public class TournamentService {
         return user;
     }
 
-    public int calculateReward(UserTournamentGroup userTournamentGroup) {  // TODO: implement reward calculation
+    public int calculateReward(UserTournamentGroup userTournamentGroup) {
         List<UserTournamentGroup> scores = userTournamentGroupRepository
                 .orderGroupByScores(userTournamentGroup.getTournamentGroup().getId());
         int rank = scores.indexOf(userTournamentGroup) + 1;
 
-        if (rank == 1)
-            return 10000;
-        else if (rank == 2)
-            return 5000;
+        RewardBucket rewardBucket = rewardBucketRepository
+                .findRewardBucketByRank(rank)
+                .orElseThrow(() -> new BadRequestException("User is not eligible for a reward"));
 
-        throw new BadRequestException("User is not eligible for a reward");
+        return rewardBucket.getRewardAmount();
     }
 
     public boolean isInActiveTournament(User user) {
@@ -156,6 +152,10 @@ public class TournamentService {
 
         int levelRequirement = 20;
         int entryFee = 1000;
+        int groupSizes = 5;
+
+        int firstPlaceReward = 10000;
+        int secondPlaceReward = 5000;
 
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         LocalTime startTime = LocalTime.of(DAILY_TOURNAMENT_START_HOUR, 0);
@@ -167,10 +167,13 @@ public class TournamentService {
                 .builder()
                 .startDateTime(startDate)
                 .endDateTime(finishDate)
-                .groupSizes(5)
+                .groupSizes(groupSizes)
                 .entryFee(entryFee)
                 .levelRequirement(levelRequirement)
                 .build();
+
+        RewardBucket.builder().tournament(tournament).startRank(1).endRank(1).rewardAmount(firstPlaceReward).build();
+        RewardBucket.builder().tournament(tournament).startRank(2).endRank(2).rewardAmount(secondPlaceReward).build();
 
         tournamentRepository.save(tournament);
     }

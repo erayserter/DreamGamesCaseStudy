@@ -3,10 +3,7 @@ package com.dreamgames.backendengineeringcasestudy.service;
 import com.dreamgames.backendengineeringcasestudy.exception.BadRequestException;
 import com.dreamgames.backendengineeringcasestudy.exception.EntityNotFoundException;
 import com.dreamgames.backendengineeringcasestudy.model.*;
-import com.dreamgames.backendengineeringcasestudy.repository.TournamentGroupRepository;
-import com.dreamgames.backendengineeringcasestudy.repository.TournamentRepository;
-import com.dreamgames.backendengineeringcasestudy.repository.UserRepository;
-import com.dreamgames.backendengineeringcasestudy.repository.UserTournamentGroupRepository;
+import com.dreamgames.backendengineeringcasestudy.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +29,7 @@ class TournamentServiceTest {
     @Mock private TournamentRepository tournamentRepository;
     @Mock private TournamentGroupRepository tournamentGroupRepository;
     @Mock private UserTournamentGroupRepository userTournamentGroupRepository;
+    @Mock private RewardBucketRepository rewardBucketRepository;
     @Mock private UserRepository userRepository;
     private TournamentService underTest;
 
@@ -41,6 +39,7 @@ class TournamentServiceTest {
                 tournamentRepository,
                 tournamentGroupRepository,
                 userTournamentGroupRepository,
+                rewardBucketRepository,
                 userRepository
         );
     }
