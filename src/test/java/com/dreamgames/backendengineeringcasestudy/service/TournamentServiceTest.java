@@ -33,7 +33,6 @@ class TournamentServiceTest {
     @Mock private TournamentGroupRepository tournamentGroupRepository;
     @Mock private UserTournamentGroupRepository userTournamentGroupRepository;
     @Mock private UserRepository userRepository;
-    @Mock private LeaderboardService leaderboardService;
     private TournamentService underTest;
 
     @BeforeEach
@@ -42,8 +41,7 @@ class TournamentServiceTest {
                 tournamentRepository,
                 tournamentGroupRepository,
                 userTournamentGroupRepository,
-                userRepository,
-                leaderboardService
+                userRepository
         );
     }
 
@@ -67,7 +65,7 @@ class TournamentServiceTest {
                         any(Date.class)
                 ))
                 .willReturn(List.of());
-        given(spy.getCurrentTournament()).willReturn(tournament);
+        doReturn(tournament).when(spy).getCurrentTournament();
         given(userTournamentGroupRepository
                 .findByUserIdAndTournamentId(user.getId(), tournament.getId()))
                 .willReturn(Optional.empty());
@@ -94,10 +92,10 @@ class TournamentServiceTest {
         user.setId(UUID.randomUUID());
         user.setLevel(TournamentService.TOURNAMENT_LEVEL_REQUIREMENT);
         user.setCoins(TournamentService.TOURNAMENT_ENTRY_FEE);
-        Tournament tournament = new Tournament();
+        Tournament tournament = Tournament.builder().groupSizes(5).build();
         TournamentGroup group = new TournamentGroup(tournament);
         List<UserTournamentGroup> users = new ArrayList<>();
-        for (int i = 1; i < TournamentService.TOURNAMENT_GROUP_SIZE; i++) {
+        for (int i = 1; i < tournament.getGroupSizes(); i++) {
             users.add(new UserTournamentGroup(null, group));
         }
         group.setUserTournamentGroups(users);
@@ -112,7 +110,7 @@ class TournamentServiceTest {
                         any(Date.class)
                 ))
                 .willReturn(List.of());
-        given(spy.getCurrentTournament()).willReturn(tournament);
+        doReturn(tournament).when(spy).getCurrentTournament();
         given(userTournamentGroupRepository
                 .findByUserIdAndTournamentId(user.getId(), tournament.getId()))
                 .willReturn(Optional.empty());
@@ -214,7 +212,7 @@ class TournamentServiceTest {
                         any(Date.class)
                 ))
                 .willReturn(List.of());
-        given(spy.getCurrentTournament()).willReturn(new Tournament());
+        doReturn(new Tournament()).when(spy).getCurrentTournament();
         given(userTournamentGroupRepository
                 .findByUserIdAndTournamentId(any(UUID.class), any()))
                 .willReturn(Optional.of(new UserTournamentGroup()));
@@ -357,7 +355,7 @@ class TournamentServiceTest {
         UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, group);
 
         TournamentService spy = Mockito.spy(underTest);
-        given(spy.getCurrentTournament()).willReturn(tournament);
+        doReturn(tournament).when(spy).getCurrentTournament();
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()))
                 .willReturn(Optional.of(userTournamentGroup));
 
@@ -378,7 +376,7 @@ class TournamentServiceTest {
         tournament.setId(id);
 
         TournamentService spy = Mockito.spy(underTest);
-        given(spy.getCurrentTournament()).willReturn(tournament);
+        doReturn(tournament).when(spy).getCurrentTournament();
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), id))
                 .willReturn(Optional.empty());
 
@@ -396,7 +394,7 @@ class TournamentServiceTest {
         user.setId(UUID.randomUUID());
 
         TournamentService spy = Mockito.spy(underTest);
-        given(spy.getCurrentTournament()).willThrow(BadRequestException.class);
+        doThrow(BadRequestException.class).when(spy).getCurrentTournament();
 
         // when
         boolean expected = spy.isInActiveTournament(user);
@@ -443,27 +441,6 @@ class TournamentServiceTest {
     }
 
     @Test
-    void shouldCreateNewTournamentWhenNoCurrentTournamentAndWithinTournamentHours() {
-        // given
-        LocalDate today = LocalDate.now(ZoneOffset.UTC);
-        LocalTime time = LocalTime.of(TournamentService.DAILY_TOURNAMENT_END_HOUR - 1, 0);
-        Instant mockedNow = ZonedDateTime.of(today, time, ZoneOffset.UTC).toInstant();
-
-        try (MockedStatic<Instant> instantMock = Mockito.mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS)) {
-            given(tournamentRepository.findOngoingTournament(any())).willReturn(Optional.empty());
-            given(tournamentRepository.save(any(Tournament.class))).willReturn(new Tournament());
-            instantMock.when(Instant::now).thenReturn(mockedNow);
-
-            // when
-            Tournament result = underTest.getCurrentTournament();
-
-            // then
-            verify(tournamentRepository).save(any(Tournament.class));
-            assertThat(result).isNotNull();
-        }
-    }
-
-    @Test
     void shouldThrowWhenNoCurrentTournamentAndOutsideTournamentHours() {
         // given
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
@@ -494,7 +471,7 @@ class TournamentServiceTest {
 
         TournamentService spy = Mockito.spy(underTest);
 
-        given(spy.getCurrentTournament()).willReturn(tournament);
+        doReturn(tournament).when(spy).getCurrentTournament();
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(any(), any()))
                 .willReturn(Optional.of(users));
 

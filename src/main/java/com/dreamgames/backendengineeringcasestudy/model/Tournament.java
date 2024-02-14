@@ -26,6 +26,10 @@ public class Tournament {
 
     private int groupSizes;
 
+    private int levelRequirement;
+
+    private int entryFee;
+
     @OneToMany(mappedBy = "tournament")
     private List<TournamentGroup> groups;
 

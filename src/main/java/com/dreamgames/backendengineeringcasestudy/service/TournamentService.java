@@ -10,6 +10,9 @@ import com.dreamgames.backendengineeringcasestudy.repository.TournamentGroupRepo
 import com.dreamgames.backendengineeringcasestudy.repository.TournamentRepository;
 import com.dreamgames.backendengineeringcasestudy.repository.UserRepository;
 import com.dreamgames.backendengineeringcasestudy.repository.UserTournamentGroupRepository;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.*;
@@ -20,7 +23,6 @@ import java.util.UUID;
 
 @Service
 public class TournamentService {
-    public final static int TOURNAMENT_GROUP_SIZE = 5;
     public final static int TOURNAMENT_LEVEL_REQUIREMENT = 20;
     public final static int TOURNAMENT_ENTRY_FEE = 1000;
     public final static int DAILY_TOURNAMENT_START_HOUR = 0;
@@ -30,18 +32,15 @@ public class TournamentService {
     private final TournamentGroupRepository tournamentGroupRepository;
     private final UserTournamentGroupRepository userTournamentGroupRepository;
     private final UserRepository userRepository;
-    private final LeaderboardService leaderboardService;
 
     public TournamentService(TournamentRepository tournamentRepository,
                              TournamentGroupRepository tournamentGroupRepository,
                              UserTournamentGroupRepository userTournamentGroupRepository,
-                             UserRepository userRepository,
-                             LeaderboardService leaderboardService) {
+                             UserRepository userRepository) {
         this.tournamentRepository = tournamentRepository;
         this.tournamentGroupRepository = tournamentGroupRepository;
         this.userTournamentGroupRepository = userTournamentGroupRepository;
         this.userRepository = userRepository;
-        this.leaderboardService = leaderboardService;
     }
 
     public void enterTournament(UUID userId) {
@@ -55,14 +54,6 @@ public class TournamentService {
 
         List<UserTournamentGroup> unclaimedRewards = userTournamentGroupRepository
                 .findPreviousUnclaimedTournamentRewards(userId, false, Date.from(Instant.now()));
-        unclaimedRewards = unclaimedRewards
-                .stream()
-                .filter(userTournamentGroup ->
-                        leaderboardService.getGroupRank(
-                                userId,
-                                userTournamentGroup.getTournamentGroup().getTournament().getId()
-                        ) <= 3)
-                .toList();
 
         if (!unclaimedRewards.isEmpty())
             throw new BadRequestException("User has unclaimed rewards");
@@ -80,7 +71,7 @@ public class TournamentService {
                 .findHasNoUsersWithCountry(tournament, user.getCountry())
                 .orElse(new TournamentGroup(tournament));
 
-        if (tournamentGroup.getUserTournamentGroups().size() >= TOURNAMENT_GROUP_SIZE - 1) {
+        if (tournamentGroup.getUserTournamentGroups().size() >= tournament.getGroupSizes() - 1) {
             Date now = Date.from(Instant.now());
             tournamentGroup.setStartDate(now);
         }
@@ -142,21 +133,8 @@ public class TournamentService {
         Instant now = Instant.now();
         Date dateNow = Date.from(now);
 
-        LocalDate today = LocalDate.now(ZoneOffset.UTC);
-        LocalTime startTime = LocalTime.of(DAILY_TOURNAMENT_START_HOUR, 0);
-        LocalTime finishTime = LocalTime.of(DAILY_TOURNAMENT_END_HOUR, 0);
-        Date startDate = Date.from(ZonedDateTime.of(today, startTime, ZoneOffset.UTC).toInstant());
-        Date finishDate = Date.from(ZonedDateTime.of(today, finishTime, ZoneOffset.UTC).toInstant());
-
-        Optional<Tournament> tournament = tournamentRepository.findOngoingTournament(dateNow);
-
-        if (tournament.isPresent()) {
-            return tournament.get();
-        } else if (dateNow.after(startDate) && dateNow.before(finishDate)) {
-            return tournamentRepository.save(new Tournament(startDate, finishDate, TOURNAMENT_GROUP_SIZE));
-        } else {
-            throw new BadRequestException("No active tournament");
-        }
+        return tournamentRepository.findOngoingTournament(dateNow)
+                .orElseThrow(() -> new BadRequestException("No active tournament"));
     }
 
     public void updateUserLevel(User user) {
@@ -166,5 +144,34 @@ public class TournamentService {
                 .orElseThrow(() -> new EntityNotFoundException("User not found in the tournament"));
         userTournamentGroup.setScore(userTournamentGroup.getScore() + 1);
         userTournamentGroupRepository.save(userTournamentGroup);
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    @Scheduled(cron = "0 0 * * * *")
+    public void createDailyTournament() {
+        Optional<Tournament> already = tournamentRepository.findOngoingTournament(Date.from(Instant.now()));
+
+        if (already.isPresent())
+            return;
+
+        int levelRequirement = 20;
+        int entryFee = 1000;
+
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalTime startTime = LocalTime.of(DAILY_TOURNAMENT_START_HOUR, 0);
+        LocalTime finishTime = LocalTime.of(DAILY_TOURNAMENT_END_HOUR, 0);
+        Date startDate = Date.from(ZonedDateTime.of(today, startTime, ZoneOffset.UTC).toInstant());
+        Date finishDate = Date.from(ZonedDateTime.of(today, finishTime, ZoneOffset.UTC).toInstant());
+
+        Tournament tournament = Tournament
+                .builder()
+                .startDateTime(startDate)
+                .endDateTime(finishDate)
+                .groupSizes(5)
+                .entryFee(entryFee)
+                .levelRequirement(levelRequirement)
+                .build();
+
+        tournamentRepository.save(tournament);
     }
 }

@@ -50,13 +50,13 @@ class LeaderboardServiceTest {
                 userTournamentScoreResponseMapper
         );
 
-        tournament = Tournament.builder().id(1L).build();
+        tournament = Tournament.builder().id(1L).groupSizes(5).build();
         tournamentGroup = TournamentGroup.builder().id(1L).build();
 
         List<User> users = new ArrayList<>();
         userTournamentGroups = new ArrayList<>();
 
-        for (int userIndex = 0; userIndex < TournamentService.TOURNAMENT_GROUP_SIZE; userIndex++) {
+        for (int userIndex = 0; userIndex < tournament.getGroupSizes(); userIndex++) {
             User user = User.builder().id(UUID.randomUUID()).build();
             UserTournamentGroup userTournamentGroup =
                     new UserTournamentGroup(user, tournamentGroup);
