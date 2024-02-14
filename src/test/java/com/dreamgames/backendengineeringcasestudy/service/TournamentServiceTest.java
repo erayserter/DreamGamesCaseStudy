@@ -33,6 +33,11 @@ class TournamentServiceTest {
     @Mock private UserRepository userRepository;
     private TournamentService underTest;
 
+    private User user;
+    private Tournament tournament;
+    private TournamentGroup tournamentGroup;
+    private UserTournamentGroup userTournamentGroup;
+
     @BeforeEach
     void setUp() {
         underTest = new TournamentService(
@@ -42,18 +47,17 @@ class TournamentServiceTest {
                 rewardBucketRepository,
                 userRepository
         );
+
+        Country country = new Country("TR", "Turkey");
+        user = User.builder().id(UUID.randomUUID()).country(country).level(20).coins(1000).build();
+        tournament = Tournament.builder().id(1L).entryFee(1000).groupSizes(5).levelRequirement(20).build();
+        tournamentGroup = new TournamentGroup(tournament);
+        userTournamentGroup = new UserTournamentGroup(user, tournamentGroup);
     }
 
     @Test
     void shouldEnterTournamentEmptyGroup() {
         // given
-        User user = new User(new Country("TR", "Turkey"));
-        user.setId(UUID.randomUUID());
-        user.setLevel(TournamentService.TOURNAMENT_LEVEL_REQUIREMENT);
-        user.setCoins(TournamentService.TOURNAMENT_ENTRY_FEE);
-        Tournament tournament = new Tournament();
-        TournamentGroup group = new TournamentGroup(tournament);
-
         TournamentService spy = Mockito.spy(underTest);
 
         given(userRepository.findById(user.getId())).willReturn(Optional.of(user));
@@ -71,7 +75,7 @@ class TournamentServiceTest {
         given(tournamentGroupRepository
                 .findHasNoUsersWithCountry(tournament, user.getCountry()))
                 .willReturn(Optional.empty());
-        given(tournamentGroupRepository.save(any(TournamentGroup.class))).willReturn(group);
+        given(tournamentGroupRepository.save(any(TournamentGroup.class))).willReturn(tournamentGroup);
 
         // when
         spy.enterTournament(user.getId());
@@ -81,23 +85,17 @@ class TournamentServiceTest {
         verify(userTournamentGroupRepository).save(userTournamentGroupArgumentCaptor.capture());
         UserTournamentGroup capturedUserTournamentGroup = userTournamentGroupArgumentCaptor.getValue();
         assertThat(capturedUserTournamentGroup.getUser()).isEqualTo(user);
-        assertThat(capturedUserTournamentGroup.getTournamentGroup()).isEqualTo(group);
+        assertThat(capturedUserTournamentGroup.getTournamentGroup()).isEqualTo(tournamentGroup);
     }
 
     @Test
     void shouldEnterTournamentLastAttendee() {
         // given
-        User user = new User(new Country("TR", "Turkey"));
-        user.setId(UUID.randomUUID());
-        user.setLevel(TournamentService.TOURNAMENT_LEVEL_REQUIREMENT);
-        user.setCoins(TournamentService.TOURNAMENT_ENTRY_FEE);
-        Tournament tournament = Tournament.builder().groupSizes(5).build();
-        TournamentGroup group = new TournamentGroup(tournament);
         List<UserTournamentGroup> users = new ArrayList<>();
         for (int i = 1; i < tournament.getGroupSizes(); i++) {
-            users.add(new UserTournamentGroup(null, group));
+            users.add(new UserTournamentGroup(null, tournamentGroup));
         }
-        group.setUserTournamentGroups(users);
+        tournamentGroup.setUserTournamentGroups(users);
 
         TournamentService spy = Mockito.spy(underTest);
 
@@ -115,8 +113,8 @@ class TournamentServiceTest {
                 .willReturn(Optional.empty());
         given(tournamentGroupRepository
                 .findHasNoUsersWithCountry(tournament, user.getCountry()))
-                .willReturn(Optional.of(group));
-        given(tournamentGroupRepository.save(any(TournamentGroup.class))).willReturn(group);
+                .willReturn(Optional.of(tournamentGroup));
+        given(tournamentGroupRepository.save(any(TournamentGroup.class))).willReturn(tournamentGroup);
 
         // when
         spy.enterTournament(user.getId());
@@ -126,31 +124,32 @@ class TournamentServiceTest {
         verify(userTournamentGroupRepository).save(userTournamentGroupArgumentCaptor.capture());
         UserTournamentGroup capturedUserTournamentGroup = userTournamentGroupArgumentCaptor.getValue();
         assertThat(capturedUserTournamentGroup.getUser()).isEqualTo(user);
-        assertThat(capturedUserTournamentGroup.getTournamentGroup()).isEqualTo(group);
+        assertThat(capturedUserTournamentGroup.getTournamentGroup()).isEqualTo(tournamentGroup);
     }
 
     @Test
     void willThrowWhenEnterTournamentUserNotFound() {
         // given
-        UUID userId = UUID.randomUUID();
-        given(userRepository.findById(userId)).willReturn(Optional.empty());
+        given(userRepository.findById(user.getId())).willReturn(Optional.empty());
 
         // when
         // then
-        assertThatThrownBy(() -> underTest.enterTournament(userId))
+        assertThatThrownBy(() -> underTest.enterTournament(user.getId()))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 
     @Test
     void willThrowWhenEnterTournamentUserLevelNotEnough() {
         // given
-        User user = new User();
-        user.setLevel(TournamentService.TOURNAMENT_LEVEL_REQUIREMENT - 1);
+        TournamentService spy = Mockito.spy(underTest);
+        user.setLevel(tournament.getLevelRequirement() - 1);
+
         given(userRepository.findById(any(UUID.class))).willReturn(Optional.of(user));
+        doReturn(tournament).when(spy).getCurrentTournament();
 
         // when
         // then
-        assertThatThrownBy(() -> underTest.enterTournament(UUID.randomUUID()))
+        assertThatThrownBy(() -> spy.enterTournament(user.getId()))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("User level is not enough to enter the tournament");
     }
@@ -158,14 +157,15 @@ class TournamentServiceTest {
     @Test
     void willThrowWhenEnterTournamentUserCoinsNotEnough() {
         // given
-        User user = new User();
-        user.setLevel(TournamentService.TOURNAMENT_LEVEL_REQUIREMENT);
-        user.setCoins(TournamentService.TOURNAMENT_ENTRY_FEE - 1);
+        user.setCoins(tournament.getEntryFee() - 1);
+        TournamentService spy = Mockito.spy(underTest);
+
         given(userRepository.findById(any(UUID.class))).willReturn(Optional.of(user));
+        doReturn(tournament).when(spy).getCurrentTournament();
 
         // when
         // then
-        assertThatThrownBy(() -> underTest.enterTournament(UUID.randomUUID()))
+        assertThatThrownBy(() -> spy.enterTournament(user.getId()))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("User does not have enough coins to enter the tournament");
     }
@@ -173,23 +173,21 @@ class TournamentServiceTest {
     @Test
     void willThrowWhenEnterTournamentUserHasUnclaimedRewards() {
         // given
-        User user = new User();
-        user.setLevel(TournamentService.TOURNAMENT_LEVEL_REQUIREMENT);
-        user.setCoins(TournamentService.TOURNAMENT_ENTRY_FEE);
-        Tournament tournament = Tournament.builder().id(1L).build();
-        TournamentGroup group = new TournamentGroup(tournament);
+        TournamentService spy = Mockito.spy(underTest);
+
         given(userRepository.findById(any(UUID.class))).willReturn(Optional.of(user));
+        doReturn(tournament).when(spy).getCurrentTournament();
         given(userTournamentGroupRepository
                 .findPreviousUnclaimedTournamentRewards(
                         any(UUID.class),
                         any(Boolean.class),
                         any(Date.class)
                 ))
-                .willReturn(List.of(UserTournamentGroup.builder().tournamentGroup(group).build()));
+                .willReturn(List.of(userTournamentGroup));
 
         // when
         // then
-        assertThatThrownBy(() -> underTest.enterTournament(UUID.randomUUID()))
+        assertThatThrownBy(() -> spy.enterTournament(UUID.randomUUID()))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("User has unclaimed rewards");
     }
@@ -197,10 +195,6 @@ class TournamentServiceTest {
     @Test
     void willThrowWhenEnterTournamentUserAlreadyEntered() {
         // given
-        User user = new User();
-        user.setLevel(TournamentService.TOURNAMENT_LEVEL_REQUIREMENT);
-        user.setCoins(TournamentService.TOURNAMENT_ENTRY_FEE);
-
         TournamentService spy = Mockito.spy(underTest);
 
         given(userRepository.findById(any(UUID.class))).willReturn(Optional.of(user));
@@ -224,20 +218,56 @@ class TournamentServiceTest {
     }
 
     @Test
+    void updateUserLevel() {
+        // given
+        int score = 200;
+        userTournamentGroup.setScore(score);
+
+        TournamentService spy = Mockito.spy(underTest);
+
+        doReturn(tournament).when(spy).getCurrentTournament();
+        given(userTournamentGroupRepository.findByUserIdAndTournamentId(any(), any()))
+                .willReturn(Optional.of(userTournamentGroup));
+
+        // when
+        spy.updateUserLevel(user);
+
+        // then
+        ArgumentCaptor<UserTournamentGroup> userTournamentGroupArgumentCaptor = ArgumentCaptor.forClass(UserTournamentGroup.class);
+        verify(userTournamentGroupRepository).save(userTournamentGroupArgumentCaptor.capture());
+        UserTournamentGroup capturedUserTournamentGroup = userTournamentGroupArgumentCaptor.getValue();
+        assertThat(capturedUserTournamentGroup.getScore()).isEqualTo(score + 1);
+    }
+
+    @Test
+    void willThrowWhenUpdateUserLevelUserNotInTournament() {
+        // given
+        TournamentService spy = Mockito.spy(underTest);
+
+        doReturn(tournament).when(spy).getCurrentTournament();
+        given(userTournamentGroupRepository.findByUserIdAndTournamentId(any(UUID.class), any(Long.class)))
+                .willReturn(Optional.empty());
+
+        // when
+        // then
+        assertThatThrownBy(() -> spy.updateUserLevel(user))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
     void shouldClaimReward() {
         // given
         int coins = 5000;
+        int reward = 10000;
+        user.setCoins(coins);
         Date date = Date.from(Instant.now().minus(Duration.ofDays(1)));
-        User user = User.builder().id(UUID.randomUUID()).coins(coins).build();
-        Tournament tournament = Tournament.builder().id(1L).endDateTime(date).build();
-        TournamentGroup tournamentGroup = TournamentGroup.builder().id(1L).tournament(tournament).build();
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup);
+        tournament.setEndDateTime(date);
 
         TournamentService spy = Mockito.spy(underTest);
 
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()))
                 .willReturn(Optional.of(userTournamentGroup));
-        doReturn(10000).when(spy).calculateReward(any(UserTournamentGroup.class));
+        doReturn(reward).when(spy).calculateReward(any(UserTournamentGroup.class));
 
         // when
         spy.claimReward(tournament.getId(), user.getId());
@@ -250,32 +280,28 @@ class TournamentServiceTest {
         UserTournamentGroup capturedUserTournamentGroup = userTournamentGroupArgumentCaptor.getValue();
         User capturedUser = userArgumentCaptor.getValue();
         assertThat(capturedUserTournamentGroup.isRewardClaimed()).isTrue();
-        assertThat(capturedUser.getCoins()).isEqualTo(coins + 10000);
+        assertThat(capturedUser.getCoins()).isEqualTo(coins + reward);
     }
 
     @Test
     void willThrowWhenClaimRewardUserTournamentNotFound() {
         // given
-        UUID userId = UUID.randomUUID();
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(any(UUID.class), any(Long.class)))
                 .willReturn(Optional.empty());
 
         // when
         // then
-        assertThatThrownBy(() -> underTest.claimReward(1L, userId))
+        assertThatThrownBy(() -> underTest.claimReward(1L, user.getId()))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 
     @Test
     void willThrowWhenClaimRewardTournamentNotEnded() {
         // given
-        User user = new User();
-        user.setId(UUID.randomUUID());
         Date date = Date.from(Instant.now().plus(Duration.ofDays(1)));
-        Tournament tournament = Tournament.builder().endDateTime(date).build();
-        TournamentGroup group = new TournamentGroup(tournament);
+        tournament.setEndDateTime(date);
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()))
-                .willReturn(Optional.of(new UserTournamentGroup(user, group)));
+                .willReturn(Optional.of(new UserTournamentGroup(user, tournamentGroup)));
 
         // when
         // then
@@ -287,12 +313,8 @@ class TournamentServiceTest {
     @Test
     void willThrowWhenClaimRewardRewardAlreadyClaimed() {
         // given
-        User user = new User();
-        user.setId(UUID.randomUUID());
         Date date = Date.from(Instant.now().minus(Duration.ofDays(1)));
-        Tournament tournament = Tournament.builder().endDateTime(date).build();
-        TournamentGroup group = new TournamentGroup(tournament);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, group);
+        tournament.setEndDateTime(date);
         userTournamentGroup.setRewardClaimed(true);
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()))
                 .willReturn(Optional.of(userTournamentGroup));
@@ -305,20 +327,41 @@ class TournamentServiceTest {
     }
 
     @Test
-    void willThrowWhenClaimRewardUserNotEligibleForReward() {
+    void shouldCalculateReward() {
         // given
-        User user = new User();
-        user.setId(UUID.randomUUID());
-        Date date = Date.from(Instant.now().minus(Duration.ofDays(1)));
-        Tournament tournament = Tournament.builder().endDateTime(date).build();
-        TournamentGroup group = new TournamentGroup(tournament);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, group);
-        given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()))
-                .willReturn(Optional.of(userTournamentGroup));
+        int rank = 1;
+        int reward = 10000;
+
+        List<UserTournamentGroup> scores = new ArrayList<>();
+        scores.add(userTournamentGroup);
+        for (int i = 1; i < tournament.getGroupSizes(); i++) {
+            scores.add(new UserTournamentGroup(null, tournamentGroup));
+        }
+        RewardBucket rewardBucket = RewardBucket.builder().startRank(rank).endRank(rank).rewardAmount(reward).build();
+
+        given(userTournamentGroupRepository.orderGroupByScores(tournamentGroup.getId())).willReturn(scores);
+        given(rewardBucketRepository.findRewardBucketByRank(rank)).willReturn(Optional.of(rewardBucket));
+
+        // when
+        int result = underTest.calculateReward(userTournamentGroup);
+
+        // then
+        assertThat(result).isEqualTo(reward);
+    }
+
+    @Test
+    void willThrowWhenCalculateRewardUserNotEligible() {
+        // given
+        List<UserTournamentGroup> scores = new ArrayList<>();
+        for (int i = 1; i < tournament.getGroupSizes(); i++) {
+            scores.add(new UserTournamentGroup(null, tournamentGroup));
+        }
+        given(userTournamentGroupRepository.orderGroupByScores(tournamentGroup.getId())).willReturn(scores);
+        given(rewardBucketRepository.findRewardBucketByRank(any(Integer.class))).willReturn(Optional.empty());
 
         // when
         // then
-        assertThatThrownBy(() -> underTest.claimReward(tournament.getId(), user.getId()))
+        assertThatThrownBy(() -> underTest.calculateReward(userTournamentGroup))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("User is not eligible for a reward");
     }
@@ -326,12 +369,7 @@ class TournamentServiceTest {
     @Test
     void shouldInActiveTournament() {
         // given
-        User user = new User(new Country("TR", "Turkey"));
-        user.setId(UUID.randomUUID());
-        Tournament tournament = new Tournament();
-        TournamentGroup group = new TournamentGroup(tournament);
-        group.setStartDate(Date.from(Instant.now()));
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, group);
+        tournamentGroup.setStartDate(Date.from(Instant.now()));
 
         given(tournamentRepository.findOngoingTournament(any(Date.class))).willReturn(Optional.of(tournament));
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()))
@@ -347,13 +385,8 @@ class TournamentServiceTest {
     @Test
     void shouldNotInActiveTournamentWhenGroupNotStarted() {
         // given
-        User user = new User(new Country("TR", "Turkey"));
-        user.setId(UUID.randomUUID());
-        Tournament tournament = new Tournament();
-        TournamentGroup group = new TournamentGroup(tournament);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, group);
-
         TournamentService spy = Mockito.spy(underTest);
+
         doReturn(tournament).when(spy).getCurrentTournament();
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()))
                 .willReturn(Optional.of(userTournamentGroup));
@@ -368,15 +401,10 @@ class TournamentServiceTest {
     @Test
     void shouldNotInActiveTournamentWhenNotInTournament() {
         // given
-        User user = new User(new Country("TR", "Turkey"));
-        user.setId(UUID.randomUUID());
-        Tournament tournament = new Tournament();
-        Long id = 1L;
-        tournament.setId(id);
-
         TournamentService spy = Mockito.spy(underTest);
+
         doReturn(tournament).when(spy).getCurrentTournament();
-        given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), id))
+        given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()))
                 .willReturn(Optional.empty());
 
         // when
@@ -389,10 +417,8 @@ class TournamentServiceTest {
     @Test
     void shouldNotInActiveTournamentWhenNoCurrentTournament() {
         // given
-        User user = new User(new Country("TR", "Turkey"));
-        user.setId(UUID.randomUUID());
-
         TournamentService spy = Mockito.spy(underTest);
+
         doThrow(BadRequestException.class).when(spy).getCurrentTournament();
 
         // when
@@ -403,33 +429,8 @@ class TournamentServiceTest {
     }
 
     @Test
-    void shouldEligibleForReward() {  // TODO: refactor when ranking buckets is implemented.
+    void shouldGetCurrentTournamentWhenPresent() {
         // given
-        int rank = 3;
-
-        // when
-        boolean expected = underTest.isEligibleForReward(rank);
-
-        // then
-        assertThat(expected).isTrue();
-    }
-
-    @Test
-    void shouldNotEligibleForReward() {  // TODO: refactor when ranking buckets is implemented.
-        // given
-        int rank = 4;
-
-        // when
-        boolean expected = underTest.isEligibleForReward(rank);
-
-        // then
-        assertThat(expected).isFalse();
-    }
-
-    @Test
-    void shouldReturnCurrentTournamentWhenPresent() {
-        // given
-        Tournament tournament = new Tournament();
         given(tournamentRepository.findOngoingTournament(any(Date.class))).willReturn(Optional.of(tournament));
 
         // when
@@ -440,7 +441,7 @@ class TournamentServiceTest {
     }
 
     @Test
-    void shouldThrowWhenNoCurrentTournamentAndOutsideTournamentHours() {
+    void shouldThrowWhenGetCurrentTournamentOutsideTournamentHours() {
         // given
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         LocalTime time = LocalTime.of(TournamentService.DAILY_TOURNAMENT_END_HOUR + 1, 0);
@@ -459,28 +460,26 @@ class TournamentServiceTest {
     }
 
     @Test
-    void updateUserLevel() {
+    void shouldCreateDailyTournament() {
         // given
-        int score = 200;
-
-        User user = new User();
-        Tournament tournament = new Tournament();
-        UserTournamentGroup users = new UserTournamentGroup(user, null);
-        users.setScore(score);
-
-        TournamentService spy = Mockito.spy(underTest);
-
-        doReturn(tournament).when(spy).getCurrentTournament();
-        given(userTournamentGroupRepository.findByUserIdAndTournamentId(any(), any()))
-                .willReturn(Optional.of(users));
+        given(tournamentRepository.findOngoingTournament(any(Date.class))).willReturn(Optional.empty());
 
         // when
-        spy.updateUserLevel(user);
+        underTest.createDailyTournament();
 
         // then
-        ArgumentCaptor<UserTournamentGroup> userTournamentGroupArgumentCaptor = ArgumentCaptor.forClass(UserTournamentGroup.class);
-        verify(userTournamentGroupRepository).save(userTournamentGroupArgumentCaptor.capture());
-        UserTournamentGroup capturedUserTournamentGroup = userTournamentGroupArgumentCaptor.getValue();
-        assertThat(capturedUserTournamentGroup.getScore()).isEqualTo(score + 1);
+        verify(tournamentRepository).save(any(Tournament.class));
+    }
+
+    @Test
+    void shouldNotCreateDailyTournamentWhenAlreadyPresent() {
+        // given
+        given(tournamentRepository.findOngoingTournament(any(Date.class))).willReturn(Optional.of(tournament));
+
+        // when
+        underTest.createDailyTournament();
+
+        // then
+        verify(tournamentRepository, never()).save(any(Tournament.class));
     }
 }

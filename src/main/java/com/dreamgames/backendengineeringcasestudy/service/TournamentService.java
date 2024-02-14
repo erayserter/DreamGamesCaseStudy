@@ -17,8 +17,6 @@ import java.util.UUID;
 
 @Service
 public class TournamentService {
-    public final static int TOURNAMENT_LEVEL_REQUIREMENT = 20;
-    public final static int TOURNAMENT_ENTRY_FEE = 1000;
     public final static int DAILY_TOURNAMENT_START_HOUR = 0;
     public final static int DAILY_TOURNAMENT_END_HOUR = 20;
 
@@ -44,9 +42,11 @@ public class TournamentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
 
-        if (user.getLevel() < TOURNAMENT_LEVEL_REQUIREMENT)
+        Tournament tournament = getCurrentTournament();
+
+        if (user.getLevel() < tournament.getLevelRequirement())
             throw new BadRequestException("User level is not enough to enter the tournament");
-        if (user.getCoins() < TOURNAMENT_ENTRY_FEE)
+        if (user.getCoins() < tournament.getEntryFee())
             throw new BadRequestException("User does not have enough coins to enter the tournament");
 
         List<UserTournamentGroup> unclaimedRewards = userTournamentGroupRepository
@@ -54,8 +54,6 @@ public class TournamentService {
 
         if (!unclaimedRewards.isEmpty())
             throw new BadRequestException("User has unclaimed rewards");
-
-        Tournament tournament = getCurrentTournament();
 
         boolean alreadyEntered = userTournamentGroupRepository
                 .findByUserIdAndTournamentId(userId, tournament.getId())
@@ -75,6 +73,15 @@ public class TournamentService {
         tournamentGroup = tournamentGroupRepository.save(tournamentGroup);
         UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup);
         userTournamentGroup.setEnteredAt(Date.from(Instant.now()));
+        userTournamentGroupRepository.save(userTournamentGroup);
+    }
+
+    public void updateUserLevel(User user) {
+        Tournament tournament = getCurrentTournament();
+        UserTournamentGroup userTournamentGroup = userTournamentGroupRepository
+                .findByUserIdAndTournamentId(user.getId(), tournament.getId())
+                .orElseThrow(() -> new EntityNotFoundException("User not found in the tournament"));
+        userTournamentGroup.setScore(userTournamentGroup.getScore() + 1);
         userTournamentGroupRepository.save(userTournamentGroup);
     }
 
@@ -121,25 +128,12 @@ public class TournamentService {
         }
     }
 
-    public boolean isEligibleForReward(int rank) {
-        return rank <= 3;
-    }
-
     public Tournament getCurrentTournament() {
         Instant now = Instant.now();
         Date dateNow = Date.from(now);
 
         return tournamentRepository.findOngoingTournament(dateNow)
                 .orElseThrow(() -> new BadRequestException("No active tournament"));
-    }
-
-    public void updateUserLevel(User user) {
-        Tournament tournament = getCurrentTournament();
-        UserTournamentGroup userTournamentGroup = userTournamentGroupRepository
-                .findByUserIdAndTournamentId(user.getId(), tournament.getId())
-                .orElseThrow(() -> new EntityNotFoundException("User not found in the tournament"));
-        userTournamentGroup.setScore(userTournamentGroup.getScore() + 1);
-        userTournamentGroupRepository.save(userTournamentGroup);
     }
 
     @EventListener(ApplicationReadyEvent.class)
