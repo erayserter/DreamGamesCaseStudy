@@ -63,7 +63,7 @@ public class TournamentService {
             throw new BadRequestException("User has already entered the tournament");
 
         TournamentGroup tournamentGroup = tournamentGroupRepository
-                .findHasNoUsersWithCountry(tournament, user.getCountry())
+                .findByTournamentAndUserTournamentGroups_User_CountryNot(tournament, user.getCountry())
                 .orElse(new TournamentGroup(tournament));
 
         if (tournamentGroup.getUserTournamentGroups().size() >= tournament.getGroupSizes() - 1) {
