@@ -24,11 +24,14 @@ public class Tournament {
     @Temporal(TemporalType.TIMESTAMP)
     private Date endDateTime;
 
+    private int groupSizes;
+
     @OneToMany(mappedBy = "tournament")
     private List<TournamentGroup> groups;
 
-    public Tournament(Date startDateTime, Date endDateTime) {
+    public Tournament(Date startDateTime, Date endDateTime, int groupSizes) {
         this.startDateTime = startDateTime;
         this.endDateTime = endDateTime;
+        this.groupSizes = groupSizes;
     }
 }

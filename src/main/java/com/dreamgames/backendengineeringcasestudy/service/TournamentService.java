@@ -30,15 +30,18 @@ public class TournamentService {
     private final TournamentGroupRepository tournamentGroupRepository;
     private final UserTournamentGroupRepository userTournamentGroupRepository;
     private final UserRepository userRepository;
+    private final LeaderboardService leaderboardService;
 
     public TournamentService(TournamentRepository tournamentRepository,
                              TournamentGroupRepository tournamentGroupRepository,
                              UserTournamentGroupRepository userTournamentGroupRepository,
-                             UserRepository userRepository) {
+                             UserRepository userRepository,
+                             LeaderboardService leaderboardService) {
         this.tournamentRepository = tournamentRepository;
         this.tournamentGroupRepository = tournamentGroupRepository;
         this.userTournamentGroupRepository = userTournamentGroupRepository;
         this.userRepository = userRepository;
+        this.leaderboardService = leaderboardService;
     }
 
     public void enterTournament(UUID userId) {
@@ -50,9 +53,16 @@ public class TournamentService {
         if (user.getCoins() < TOURNAMENT_ENTRY_FEE)
             throw new BadRequestException("User does not have enough coins to enter the tournament");
 
-        // TODO: burasi odul kazanilmayan turnuvalari da getiriyor onu duzelt
         List<UserTournamentGroup> unclaimedRewards = userTournamentGroupRepository
                 .findPreviousUnclaimedTournamentRewards(userId, false, Date.from(Instant.now()));
+        unclaimedRewards = unclaimedRewards
+                .stream()
+                .filter(userTournamentGroup ->
+                        leaderboardService.getGroupRank(
+                                userId,
+                                userTournamentGroup.getTournamentGroup().getTournament().getId()
+                        ) <= 3)
+                .toList();
 
         if (!unclaimedRewards.isEmpty())
             throw new BadRequestException("User has unclaimed rewards");
@@ -143,7 +153,7 @@ public class TournamentService {
         if (tournament.isPresent()) {
             return tournament.get();
         } else if (dateNow.after(startDate) && dateNow.before(finishDate)) {
-            return tournamentRepository.save(new Tournament(startDate, finishDate));
+            return tournamentRepository.save(new Tournament(startDate, finishDate, TOURNAMENT_GROUP_SIZE));
         } else {
             throw new BadRequestException("No active tournament");
         }

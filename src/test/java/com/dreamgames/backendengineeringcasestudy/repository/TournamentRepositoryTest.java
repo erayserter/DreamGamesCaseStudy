@@ -30,7 +30,12 @@ class TournamentRepositoryTest {
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
         ZonedDateTime start = now.minusDays(1);
         ZonedDateTime end = now.plusDays(1);
-        underTest.save(new Tournament(Date.from(start.toInstant()), Date.from(end.toInstant())));
+        underTest.save(
+                Tournament
+                        .builder()
+                        .startDateTime(Date.from(start.toInstant()))
+                        .endDateTime(Date.from(end.toInstant()))
+                        .build());
 
         // when
         Optional<Tournament> expected = underTest.findOngoingTournament(Date.from(now.toInstant()));
@@ -45,7 +50,12 @@ class TournamentRepositoryTest {
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
         ZonedDateTime start = now.minusDays(2);
         ZonedDateTime end = now.minusDays(1);
-        underTest.save(new Tournament(Date.from(start.toInstant()), Date.from(end.toInstant())));
+        underTest.save(
+                Tournament
+                        .builder()
+                        .startDateTime(Date.from(start.toInstant()))
+                        .endDateTime(Date.from(end.toInstant()))
+                        .build());
 
         // when
         Optional<Tournament> expected = underTest.findOngoingTournament(Date.from(now.toInstant()));

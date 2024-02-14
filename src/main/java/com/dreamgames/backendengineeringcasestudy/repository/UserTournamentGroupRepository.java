@@ -1,7 +1,6 @@
 package com.dreamgames.backendengineeringcasestudy.repository;
 
 import com.dreamgames.backendengineeringcasestudy.dto.CountryTournamentScoreResponse;
-import com.dreamgames.backendengineeringcasestudy.model.TournamentGroup;
 import com.dreamgames.backendengineeringcasestudy.model.UserTournamentGroup;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

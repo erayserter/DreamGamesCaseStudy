@@ -87,7 +87,11 @@ class UserTournamentGroupRepositoryTest {
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
         ZonedDateTime start = now.minusDays(2);
         ZonedDateTime end = now.minusDays(1);
-        Tournament tournament = new Tournament(Date.from(start.toInstant()), Date.from(end.toInstant()));
+        Tournament tournament = Tournament
+                .builder()
+                .startDateTime(Date.from(start.toInstant()))
+                .endDateTime(Date.from(end.toInstant()))
+                .build();
         tournament = tournamentRepository.save(tournament);
         TournamentGroup tournamentGroup = new TournamentGroup(tournament);
         tournamentGroup = tournamentGroupRepository.save(tournamentGroup);

@@ -33,6 +33,7 @@ class TournamentServiceTest {
     @Mock private TournamentGroupRepository tournamentGroupRepository;
     @Mock private UserTournamentGroupRepository userTournamentGroupRepository;
     @Mock private UserRepository userRepository;
+    @Mock private LeaderboardService leaderboardService;
     private TournamentService underTest;
 
     @BeforeEach
@@ -41,7 +42,8 @@ class TournamentServiceTest {
                 tournamentRepository,
                 tournamentGroupRepository,
                 userTournamentGroupRepository,
-                userRepository
+                userRepository,
+                leaderboardService
         );
     }
 
@@ -177,6 +179,8 @@ class TournamentServiceTest {
         User user = new User();
         user.setLevel(TournamentService.TOURNAMENT_LEVEL_REQUIREMENT);
         user.setCoins(TournamentService.TOURNAMENT_ENTRY_FEE);
+        Tournament tournament = Tournament.builder().id(1L).build();
+        TournamentGroup group = new TournamentGroup(tournament);
         given(userRepository.findById(any(UUID.class))).willReturn(Optional.of(user));
         given(userTournamentGroupRepository
                 .findPreviousUnclaimedTournamentRewards(
@@ -184,7 +188,7 @@ class TournamentServiceTest {
                         any(Boolean.class),
                         any(Date.class)
                 ))
-                .willReturn(List.of(new UserTournamentGroup()));
+                .willReturn(List.of(UserTournamentGroup.builder().tournamentGroup(group).build()));
 
         // when
         // then

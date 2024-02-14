@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CountryRepository extends JpaRepository<Country, Integer> {
-    @Query(value = "SELECT * FROM \"country\" ORDER BY RAND() LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT * FROM country ORDER BY RAND() LIMIT 1", nativeQuery = true)
     Country getRandomCountry();
 }
