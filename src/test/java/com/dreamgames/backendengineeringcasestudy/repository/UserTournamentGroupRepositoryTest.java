@@ -48,7 +48,7 @@ class UserTournamentGroupRepositoryTest {
         tournament = tournamentRepository.save(tournament);
         TournamentGroup tournamentGroup = new TournamentGroup(tournament);
         tournamentGroup = tournamentGroupRepository.save(tournamentGroup);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup, 1);
+        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup);
         underTest.save(userTournamentGroup);
 
         // when
@@ -68,53 +68,12 @@ class UserTournamentGroupRepositoryTest {
         tournament = tournamentRepository.save(tournament);
         TournamentGroup tournamentGroup = new TournamentGroup(tournament);
         tournamentGroup = tournamentGroupRepository.save(tournamentGroup);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup, 1);
+        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup);
         underTest.save(userTournamentGroup);
 
         // when
         Optional<UserTournamentGroup> expected =
                 underTest.findByUserIdAndTournamentId(user.getId(), 2L);
-
-        // then
-        assertThat(expected).isNotPresent();
-    }
-
-    @Test
-    void shouldFindByTournamentGroupAndRanking() {
-        // given
-        User user = new User();
-        user = userRepository.save(user);
-        Tournament tournament = new Tournament();
-        tournament = tournamentRepository.save(tournament);
-        TournamentGroup tournamentGroup = new TournamentGroup(tournament);
-        tournamentGroup = tournamentGroupRepository.save(tournamentGroup);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup, 3);
-        underTest.save(userTournamentGroup);
-
-        // when
-        Optional<UserTournamentGroup> expected =
-                underTest.findByTournamentGroupAndRanking(tournamentGroup, 3);
-
-        // then
-        assertThat(expected).isPresent();
-        assertThat(expected.get()).isEqualTo(userTournamentGroup);
-    }
-
-    @Test
-    void shouldNotFindByTournamentGroupAndRanking() {
-        // given
-        User user = new User();
-        user = userRepository.save(user);
-        Tournament tournament = new Tournament();
-        tournament = tournamentRepository.save(tournament);
-        TournamentGroup tournamentGroup = new TournamentGroup(tournament);
-        tournamentGroup = tournamentGroupRepository.save(tournamentGroup);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup, 3);
-        underTest.save(userTournamentGroup);
-
-        // when
-        Optional<UserTournamentGroup> expected =
-                underTest.findByTournamentGroupAndRanking(tournamentGroup, 2);
 
         // then
         assertThat(expected).isNotPresent();
@@ -132,14 +91,13 @@ class UserTournamentGroupRepositoryTest {
         tournament = tournamentRepository.save(tournament);
         TournamentGroup tournamentGroup = new TournamentGroup(tournament);
         tournamentGroup = tournamentGroupRepository.save(tournamentGroup);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup, 3);
+        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup);
         underTest.save(userTournamentGroup);
 
         // when
         List<UserTournamentGroup> expected =
                 underTest.findPreviousUnclaimedTournamentRewards(
                         user.getId(),
-                        3,
                         false,
                         Date.from(now.toInstant())
                 );
@@ -158,7 +116,6 @@ class UserTournamentGroupRepositoryTest {
         List<UserTournamentGroup> expected =
                 underTest.findPreviousUnclaimedTournamentRewards(
                         user.getId(),
-                        3,
                         false,
                         Date.from(Instant.now())
                 );
@@ -178,9 +135,9 @@ class UserTournamentGroupRepositoryTest {
         tournament = tournamentRepository.save(tournament);
         TournamentGroup tournamentGroup = new TournamentGroup(tournament);
         tournamentGroup = tournamentGroupRepository.save(tournamentGroup);
-        UserTournamentGroup userTournamentGroup1 = new UserTournamentGroup(user, tournamentGroup, 2);
+        UserTournamentGroup userTournamentGroup1 = new UserTournamentGroup(user, tournamentGroup);
         userTournamentGroup1.setScore(10);
-        UserTournamentGroup userTournamentGroup2 = new UserTournamentGroup(anotherUser, tournamentGroup, 1);
+        UserTournamentGroup userTournamentGroup2 = new UserTournamentGroup(anotherUser, tournamentGroup);
         userTournamentGroup2.setScore(20);
         underTest.save(userTournamentGroup1);
         underTest.save(userTournamentGroup2);
@@ -205,7 +162,7 @@ class UserTournamentGroupRepositoryTest {
         tournament = tournamentRepository.save(tournament);
         TournamentGroup tournamentGroup = new TournamentGroup(tournament);
         tournamentGroup = tournamentGroupRepository.save(tournamentGroup);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup, 3);
+        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup);
         userTournamentGroup.setScore(10);
         underTest.save(userTournamentGroup);
 

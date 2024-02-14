@@ -2,6 +2,7 @@ package com.dreamgames.backendengineeringcasestudy.service;
 
 import com.dreamgames.backendengineeringcasestudy.dto.CountryTournamentScoreResponse;
 import com.dreamgames.backendengineeringcasestudy.dto.UserTournamentScoreResponseMapper;
+import com.dreamgames.backendengineeringcasestudy.exception.BadRequestException;
 import com.dreamgames.backendengineeringcasestudy.model.Tournament;
 import com.dreamgames.backendengineeringcasestudy.model.TournamentGroup;
 import com.dreamgames.backendengineeringcasestudy.model.User;
@@ -21,7 +22,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -39,7 +39,6 @@ class LeaderboardServiceTest {
     private Tournament tournament;
     private TournamentGroup tournamentGroup;
     private UserTournamentGroup userTournamentGroup;
-    private List<User> users;
     private List<UserTournamentGroup> userTournamentGroups;
 
 
@@ -54,13 +53,13 @@ class LeaderboardServiceTest {
         tournament = Tournament.builder().id(1L).build();
         tournamentGroup = TournamentGroup.builder().id(1L).build();
 
-        users = new ArrayList<>();
+        List<User> users = new ArrayList<>();
         userTournamentGroups = new ArrayList<>();
 
         for (int userIndex = 0; userIndex < TournamentService.TOURNAMENT_GROUP_SIZE; userIndex++) {
             User user = User.builder().id(UUID.randomUUID()).build();
             UserTournamentGroup userTournamentGroup =
-                    new UserTournamentGroup(user, tournamentGroup, userIndex + 1);
+                    new UserTournamentGroup(user, tournamentGroup);
             users.add(user);
             userTournamentGroups.add(userTournamentGroup);
         }
@@ -73,11 +72,11 @@ class LeaderboardServiceTest {
     void shouldGetGroupRank() {
         // given
         int rank = 1;
-        UserTournamentGroup userTournamentGroup =
-                new UserTournamentGroup(user, tournamentGroup, rank);
-
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(any(UUID.class), any(Long.class)))
                 .willReturn(Optional.of(userTournamentGroup));
+        given(userTournamentGroupRepository.orderGroupByScores(tournamentGroup.getId()))
+                .willReturn(userTournamentGroups);
+
 
         // when
         int expected = underTest.getGroupRank(
@@ -98,7 +97,7 @@ class LeaderboardServiceTest {
         // when
         // then
         assertThatThrownBy(() -> underTest.getGroupRank(user.getId(), tournament.getId()))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("This user is not attended to this tournament");
     }
 

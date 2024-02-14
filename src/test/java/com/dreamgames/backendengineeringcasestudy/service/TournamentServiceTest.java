@@ -1,11 +1,12 @@
 package com.dreamgames.backendengineeringcasestudy.service;
 
+import com.dreamgames.backendengineeringcasestudy.exception.BadRequestException;
+import com.dreamgames.backendengineeringcasestudy.exception.EntityNotFoundException;
 import com.dreamgames.backendengineeringcasestudy.model.*;
 import com.dreamgames.backendengineeringcasestudy.repository.TournamentGroupRepository;
 import com.dreamgames.backendengineeringcasestudy.repository.TournamentRepository;
 import com.dreamgames.backendengineeringcasestudy.repository.UserRepository;
 import com.dreamgames.backendengineeringcasestudy.repository.UserTournamentGroupRepository;
-import org.hibernate.ObjectNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,7 +61,6 @@ class TournamentServiceTest {
         given(userTournamentGroupRepository
                 .findPreviousUnclaimedTournamentRewards(
                         any(UUID.class),
-                        any(Integer.class),
                         any(Boolean.class),
                         any(Date.class)
                 ))
@@ -83,7 +83,6 @@ class TournamentServiceTest {
         UserTournamentGroup capturedUserTournamentGroup = userTournamentGroupArgumentCaptor.getValue();
         assertThat(capturedUserTournamentGroup.getUser()).isEqualTo(user);
         assertThat(capturedUserTournamentGroup.getTournamentGroup()).isEqualTo(group);
-        assertThat(capturedUserTournamentGroup.getRanking()).isEqualTo(1);
     }
 
     @Test
@@ -97,7 +96,7 @@ class TournamentServiceTest {
         TournamentGroup group = new TournamentGroup(tournament);
         List<UserTournamentGroup> users = new ArrayList<>();
         for (int i = 1; i < TournamentService.TOURNAMENT_GROUP_SIZE; i++) {
-            users.add(new UserTournamentGroup(null, group, i));
+            users.add(new UserTournamentGroup(null, group));
         }
         group.setUserTournamentGroups(users);
 
@@ -107,7 +106,6 @@ class TournamentServiceTest {
         given(userTournamentGroupRepository
                 .findPreviousUnclaimedTournamentRewards(
                         any(UUID.class),
-                        any(Integer.class),
                         any(Boolean.class),
                         any(Date.class)
                 ))
@@ -130,7 +128,6 @@ class TournamentServiceTest {
         UserTournamentGroup capturedUserTournamentGroup = userTournamentGroupArgumentCaptor.getValue();
         assertThat(capturedUserTournamentGroup.getUser()).isEqualTo(user);
         assertThat(capturedUserTournamentGroup.getTournamentGroup()).isEqualTo(group);
-        assertThat(capturedUserTournamentGroup.getRanking()).isEqualTo(TournamentService.TOURNAMENT_GROUP_SIZE);
     }
 
     @Test
@@ -142,7 +139,7 @@ class TournamentServiceTest {
         // when
         // then
         assertThatThrownBy(() -> underTest.enterTournament(userId))
-                .isInstanceOf(ObjectNotFoundException.class);
+                .isInstanceOf(EntityNotFoundException.class);
     }
 
     @Test
@@ -155,7 +152,7 @@ class TournamentServiceTest {
         // when
         // then
         assertThatThrownBy(() -> underTest.enterTournament(UUID.randomUUID()))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessage("User level is not enough to enter the tournament");
     }
 
@@ -170,7 +167,7 @@ class TournamentServiceTest {
         // when
         // then
         assertThatThrownBy(() -> underTest.enterTournament(UUID.randomUUID()))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessage("User does not have enough coins to enter the tournament");
     }
 
@@ -184,7 +181,6 @@ class TournamentServiceTest {
         given(userTournamentGroupRepository
                 .findPreviousUnclaimedTournamentRewards(
                         any(UUID.class),
-                        any(Integer.class),
                         any(Boolean.class),
                         any(Date.class)
                 ))
@@ -193,7 +189,7 @@ class TournamentServiceTest {
         // when
         // then
         assertThatThrownBy(() -> underTest.enterTournament(UUID.randomUUID()))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessage("User has unclaimed rewards");
     }
 
@@ -210,7 +206,6 @@ class TournamentServiceTest {
         given(userTournamentGroupRepository
                 .findPreviousUnclaimedTournamentRewards(
                         any(UUID.class),
-                        any(Integer.class),
                         any(Boolean.class),
                         any(Date.class)
                 ))
@@ -223,7 +218,7 @@ class TournamentServiceTest {
         // when
         // then
         assertThatThrownBy(() -> spy.enterTournament(UUID.randomUUID()))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessage("User has already entered the tournament");
     }
 
@@ -234,14 +229,17 @@ class TournamentServiceTest {
         Date date = Date.from(Instant.now().minus(Duration.ofDays(1)));
         User user = User.builder().id(UUID.randomUUID()).coins(coins).build();
         Tournament tournament = Tournament.builder().id(1L).endDateTime(date).build();
-        TournamentGroup tournamentGroup = new TournamentGroup(tournament);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup, 1);
+        TournamentGroup tournamentGroup = TournamentGroup.builder().id(1L).tournament(tournament).build();
+        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup);
+
+        TournamentService spy = Mockito.spy(underTest);
 
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()))
                 .willReturn(Optional.of(userTournamentGroup));
+        doReturn(10000).when(spy).calculateReward(any(UserTournamentGroup.class));
 
         // when
-        underTest.claimReward(tournament.getId(), user.getId());
+        spy.claimReward(tournament.getId(), user.getId());
 
         // then
         ArgumentCaptor<UserTournamentGroup> userTournamentGroupArgumentCaptor = ArgumentCaptor.forClass(UserTournamentGroup.class);
@@ -264,7 +262,7 @@ class TournamentServiceTest {
         // when
         // then
         assertThatThrownBy(() -> underTest.claimReward(1L, userId))
-                .isInstanceOf(ObjectNotFoundException.class);
+                .isInstanceOf(EntityNotFoundException.class);
     }
 
     @Test
@@ -276,12 +274,12 @@ class TournamentServiceTest {
         Tournament tournament = Tournament.builder().endDateTime(date).build();
         TournamentGroup group = new TournamentGroup(tournament);
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()))
-                .willReturn(Optional.of(new UserTournamentGroup(user, group, 1)));
+                .willReturn(Optional.of(new UserTournamentGroup(user, group)));
 
         // when
         // then
         assertThatThrownBy(() -> underTest.claimReward(tournament.getId(), user.getId()))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessage("Tournament has not ended yet");
     }
 
@@ -293,7 +291,7 @@ class TournamentServiceTest {
         Date date = Date.from(Instant.now().minus(Duration.ofDays(1)));
         Tournament tournament = Tournament.builder().endDateTime(date).build();
         TournamentGroup group = new TournamentGroup(tournament);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, group, 1);
+        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, group);
         userTournamentGroup.setRewardClaimed(true);
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()))
                 .willReturn(Optional.of(userTournamentGroup));
@@ -301,7 +299,7 @@ class TournamentServiceTest {
         // when
         // then
         assertThatThrownBy(() -> underTest.claimReward(tournament.getId(), user.getId()))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessage("Reward already claimed");
     }
 
@@ -313,14 +311,14 @@ class TournamentServiceTest {
         Date date = Date.from(Instant.now().minus(Duration.ofDays(1)));
         Tournament tournament = Tournament.builder().endDateTime(date).build();
         TournamentGroup group = new TournamentGroup(tournament);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, group, 4);
+        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, group);
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()))
                 .willReturn(Optional.of(userTournamentGroup));
 
         // when
         // then
         assertThatThrownBy(() -> underTest.claimReward(tournament.getId(), user.getId()))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessage("User is not eligible for a reward");
     }
 
@@ -332,7 +330,7 @@ class TournamentServiceTest {
         Tournament tournament = new Tournament();
         TournamentGroup group = new TournamentGroup(tournament);
         group.setStartDate(Date.from(Instant.now()));
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, group, 1);
+        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, group);
 
         given(tournamentRepository.findOngoingTournament(any(Date.class))).willReturn(Optional.of(tournament));
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(user.getId(), tournament.getId()))
@@ -352,7 +350,7 @@ class TournamentServiceTest {
         user.setId(UUID.randomUUID());
         Tournament tournament = new Tournament();
         TournamentGroup group = new TournamentGroup(tournament);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, group, 1);
+        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, group);
 
         TournamentService spy = Mockito.spy(underTest);
         given(spy.getCurrentTournament()).willReturn(tournament);
@@ -394,7 +392,7 @@ class TournamentServiceTest {
         user.setId(UUID.randomUUID());
 
         TournamentService spy = Mockito.spy(underTest);
-        given(spy.getCurrentTournament()).willThrow(IllegalArgumentException.class);
+        given(spy.getCurrentTournament()).willThrow(BadRequestException.class);
 
         // when
         boolean expected = spy.isInActiveTournament(user);
@@ -462,7 +460,7 @@ class TournamentServiceTest {
     }
 
     @Test
-    void shouldThrowExceptionWhenNoCurrentTournamentAndOutsideTournamentHours() {
+    void shouldThrowWhenNoCurrentTournamentAndOutsideTournamentHours() {
         // given
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         LocalTime time = LocalTime.of(TournamentService.DAILY_TOURNAMENT_END_HOUR + 1, 0);
@@ -475,7 +473,7 @@ class TournamentServiceTest {
             // when
             // then
             assertThatThrownBy(() -> underTest.getCurrentTournament())
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(BadRequestException.class)
                     .hasMessage("No active tournament");
         }
     }
@@ -483,37 +481,26 @@ class TournamentServiceTest {
     @Test
     void updateUserLevel() {
         // given
-        int userRanking = 2;
-        int rivalRanking = 1;
         int score = 200;
 
         User user = new User();
-        User anotherUser = new User();
         Tournament tournament = new Tournament();
-        UserTournamentGroup users = new UserTournamentGroup(user, null, userRanking);
-        UserTournamentGroup rivals = new UserTournamentGroup(anotherUser, null, rivalRanking);
+        UserTournamentGroup users = new UserTournamentGroup(user, null);
         users.setScore(score);
-        rivals.setScore(score);
 
         TournamentService spy = Mockito.spy(underTest);
 
         given(spy.getCurrentTournament()).willReturn(tournament);
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(any(), any()))
                 .willReturn(Optional.of(users));
-        given(userTournamentGroupRepository.findByTournamentGroupAndRanking(any(), any(Integer.class)))
-                .willReturn(Optional.of(rivals));
 
         // when
         spy.updateUserLevel(user);
 
         // then
         ArgumentCaptor<UserTournamentGroup> userTournamentGroupArgumentCaptor = ArgumentCaptor.forClass(UserTournamentGroup.class);
-        verify(userTournamentGroupRepository, times(2)).save(userTournamentGroupArgumentCaptor.capture());
-        List<UserTournamentGroup> capturedUserTournamentGroup = userTournamentGroupArgumentCaptor.getAllValues();
-        rivals = capturedUserTournamentGroup.get(0);
-        users = capturedUserTournamentGroup.get(1);
-        assertThat(users.getRanking()).isEqualTo(userRanking - 1);
-        assertThat(users.getScore()).isEqualTo(score + 1);
-        assertThat(rivals.getRanking()).isEqualTo(rivalRanking + 1);
+        verify(userTournamentGroupRepository).save(userTournamentGroupArgumentCaptor.capture());
+        UserTournamentGroup capturedUserTournamentGroup = userTournamentGroupArgumentCaptor.getValue();
+        assertThat(capturedUserTournamentGroup.getScore()).isEqualTo(score + 1);
     }
 }

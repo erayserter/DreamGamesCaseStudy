@@ -1,6 +1,7 @@
 package com.dreamgames.backendengineeringcasestudy.service;
 
 import com.dreamgames.backendengineeringcasestudy.dto.*;
+import com.dreamgames.backendengineeringcasestudy.exception.BadRequestException;
 import com.dreamgames.backendengineeringcasestudy.model.Tournament;
 import com.dreamgames.backendengineeringcasestudy.model.UserTournamentGroup;
 import com.dreamgames.backendengineeringcasestudy.repository.UserTournamentGroupRepository;
@@ -28,9 +29,12 @@ public class LeaderboardService {
         UserTournamentGroup userTournamentGroup =
                 userTournamentGroupRepository
                         .findByUserIdAndTournamentId(userId, tournamentId)
-                        .orElseThrow(() -> new IllegalArgumentException("This user is not attended to this tournament"));
+                        .orElseThrow(() -> new BadRequestException("This user is not attended to this tournament"));
 
-        return userTournamentGroup.getRanking();
+        List<UserTournamentGroup> scores = userTournamentGroupRepository
+                .orderGroupByScores(userTournamentGroup.getTournamentGroup().getId());
+
+        return scores.indexOf(userTournamentGroup) + 1;
     }
 
     public List<UserTournamentScoreResponse> getGroupLeaderboard(UUID userId) {
@@ -39,7 +43,7 @@ public class LeaderboardService {
         UserTournamentGroup userTournamentGroup =
                 userTournamentGroupRepository
                         .findByUserIdAndTournamentId(userId, tournament.getId())
-                        .orElseThrow(() -> new IllegalArgumentException("This user is not attended to this tournament"));
+                        .orElseThrow(() -> new BadRequestException("This user is not attended to this tournament"));
 
         List<UserTournamentGroup> scores = userTournamentGroupRepository
                 .orderGroupByScores(userTournamentGroup.getTournamentGroup().getId());

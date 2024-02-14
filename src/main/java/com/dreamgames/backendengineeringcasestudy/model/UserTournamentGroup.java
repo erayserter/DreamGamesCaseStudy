@@ -27,18 +27,14 @@ public class UserTournamentGroup {
 
     private int score = 0;
 
-    private int ranking;
-
     private boolean isRewardClaimed = false;
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date enteredAt = Date.from(Instant.now());
 
     public UserTournamentGroup(User user,
-                               TournamentGroup tournamentGroup,
-                               int ranking) {
+                               TournamentGroup tournamentGroup) {
         this.user = user;
         this.tournamentGroup = tournamentGroup;
-        this.ranking = ranking;
     }
 }

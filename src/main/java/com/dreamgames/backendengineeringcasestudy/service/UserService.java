@@ -3,11 +3,11 @@ package com.dreamgames.backendengineeringcasestudy.service;
 import com.dreamgames.backendengineeringcasestudy.dto.UserProgressResponse;
 import com.dreamgames.backendengineeringcasestudy.dto.UserResponse;
 import com.dreamgames.backendengineeringcasestudy.dto.UserResponseMapper;
+import com.dreamgames.backendengineeringcasestudy.exception.EntityNotFoundException;
 import com.dreamgames.backendengineeringcasestudy.model.Country;
 import com.dreamgames.backendengineeringcasestudy.model.User;
 import com.dreamgames.backendengineeringcasestudy.repository.CountryRepository;
 import com.dreamgames.backendengineeringcasestudy.repository.UserRepository;
-import org.hibernate.ObjectNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -41,7 +41,7 @@ public class UserService {
     public UserProgressResponse updateLevel(UUID userId) {
         User user = userRepository
                 .findById(userId)
-                .orElseThrow(() -> new ObjectNotFoundException(userId, User.class.getName()));
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
         user.setLevel(user.getLevel() + 1);
         user.setCoins(user.getCoins() + LEVEL_UP_REWARD);
 

@@ -1,11 +1,11 @@
 package com.dreamgames.backendengineeringcasestudy.service;
 
 import com.dreamgames.backendengineeringcasestudy.dto.UserResponseMapper;
+import com.dreamgames.backendengineeringcasestudy.exception.EntityNotFoundException;
 import com.dreamgames.backendengineeringcasestudy.model.Country;
 import com.dreamgames.backendengineeringcasestudy.model.User;
 import com.dreamgames.backendengineeringcasestudy.repository.CountryRepository;
 import com.dreamgames.backendengineeringcasestudy.repository.UserRepository;
-import org.hibernate.ObjectNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -131,7 +131,7 @@ class UserServiceTest {
         // when
         // then
         assertThatThrownBy(() -> underTest.updateLevel(userId))
-                .isInstanceOf(ObjectNotFoundException.class);
+                .isInstanceOf(EntityNotFoundException.class);
 
         verify(userRepository, never()).save(any());
         verify(tournamentService, never()).updateUserLevel(any());
