@@ -1,9 +1,7 @@
 package com.dreamgames.backendengineeringcasestudy.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.Instant;
 import java.util.Date;
@@ -12,6 +10,8 @@ import java.util.Date;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserTournamentGroup {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

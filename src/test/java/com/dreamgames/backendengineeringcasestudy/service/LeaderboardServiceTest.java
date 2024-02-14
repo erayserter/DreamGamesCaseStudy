@@ -14,10 +14,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +35,14 @@ class LeaderboardServiceTest {
 
     private LeaderboardService underTest;
 
+    private User user;
+    private Tournament tournament;
+    private TournamentGroup tournamentGroup;
+    private UserTournamentGroup userTournamentGroup;
+    private List<User> users;
+    private List<UserTournamentGroup> userTournamentGroups;
+
+
     @BeforeEach
     void setUp() {
         underTest = new LeaderboardService(
@@ -40,43 +50,54 @@ class LeaderboardServiceTest {
                 tournamentService,
                 userTournamentScoreResponseMapper
         );
+
+        tournament = Tournament.builder().id(1L).build();
+        tournamentGroup = TournamentGroup.builder().id(1L).build();
+
+        users = new ArrayList<>();
+        userTournamentGroups = new ArrayList<>();
+
+        for (int userIndex = 0; userIndex < TournamentService.TOURNAMENT_GROUP_SIZE; userIndex++) {
+            User user = User.builder().id(UUID.randomUUID()).build();
+            UserTournamentGroup userTournamentGroup =
+                    new UserTournamentGroup(user, tournamentGroup, userIndex + 1);
+            users.add(user);
+            userTournamentGroups.add(userTournamentGroup);
+        }
+
+        user = users.get(0);
+        userTournamentGroup = userTournamentGroups.get(0);
     }
 
     @Test
     void shouldGetGroupRank() {
         // given
-        int rank = 100;
-        UUID userId = UUID.randomUUID();
-        User user = new User();
-        user.setId(userId);
-        Long tournamentId = 1L;
-        Tournament tournament = new Tournament();
-        tournament.setId(tournamentId);
-        TournamentGroup tournamentGroup = new TournamentGroup(tournament);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup, rank);
+        int rank = 1;
+        UserTournamentGroup userTournamentGroup =
+                new UserTournamentGroup(user, tournamentGroup, rank);
 
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(any(UUID.class), any(Long.class)))
                 .willReturn(Optional.of(userTournamentGroup));
 
         // when
-        int expected = underTest.getGroupRank(userId, tournamentId);
+        int expected = underTest.getGroupRank(
+                user.getId(),
+                tournament.getId()
+        );
 
         // then
-        assertEquals(rank, expected);
+        assertThat(rank).isEqualTo(expected);
     }
 
     @Test
     void willThrowWhenGetGroupRankIfNotInTournament() {
         // given
-        UUID userId = UUID.randomUUID();
-        Long tournamentId = 1L;
-
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(any(UUID.class), any(Long.class)))
                 .willReturn(Optional.empty());
 
         // when
         // then
-        assertThatThrownBy(() -> underTest.getGroupRank(userId, tournamentId))
+        assertThatThrownBy(() -> underTest.getGroupRank(user.getId(), tournament.getId()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("This user is not attended to this tournament");
     }
@@ -84,39 +105,22 @@ class LeaderboardServiceTest {
     @Test
     void shouldGetGroupLeaderboard() {
         // given
-        UUID userId = UUID.randomUUID();
-        UUID anotherUserId = UUID.randomUUID();
-        User user = new User();
-        User anotherUser = new User();
-        user.setId(userId);
-        anotherUser.setId(anotherUserId);
-        Long tournamentId = 1L;
-        Tournament tournament = new Tournament();
-        tournament.setId(tournamentId);
-        TournamentGroup tournamentGroup = new TournamentGroup(tournament);
-        UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup, 100);
-        UserTournamentGroup userTournamentGroup2 = new UserTournamentGroup(anotherUser, tournamentGroup, 200);
-
         given(tournamentService.getCurrentTournament()).willReturn(tournament);
         given(userTournamentGroupRepository.findByUserIdAndTournamentId(any(UUID.class), any(Long.class)))
                 .willReturn(Optional.of(userTournamentGroup));
         given(userTournamentGroupRepository.orderGroupByScores(any()))
-                .willReturn(List.of(userTournamentGroup, userTournamentGroup2));
+                .willReturn(userTournamentGroups);
 
         // when
-        var expected = underTest.getGroupLeaderboard(userId);
+        var expected = underTest.getGroupLeaderboard(user.getId());
 
         // then
-        assertEquals(2, expected.size());
+        assertThat(userTournamentGroups.size()).isEqualTo(expected.size());
     }
 
     @Test
     void shouldGetCountryLeaderboard() {
         // given
-        Long tournamentId = 1L;
-        Tournament tournament = new Tournament();
-        tournament.setId(tournamentId);
-
         ArgumentCaptor<Long> tournamentIdCaptor = ArgumentCaptor.forClass(Long.class);
         given(tournamentService.getCurrentTournament()).willReturn(tournament);
         given(userTournamentGroupRepository.findCountryScoresByTournamentId(any(Long.class)))
@@ -127,7 +131,7 @@ class LeaderboardServiceTest {
 
         // then
         verify(userTournamentGroupRepository).findCountryScoresByTournamentId(tournamentIdCaptor.capture());
-        assertEquals(tournamentId, tournamentIdCaptor.getValue());
-        assertEquals(2, expected.size());
+        assertThat(tournament.getId()).isEqualTo(tournamentIdCaptor.getValue());
+        assertThat(2).isEqualTo(expected.size());
     }
 }

@@ -8,9 +8,11 @@ import java.util.UUID;
 
 @Getter
 @Setter
-@Entity
 @NoArgsConstructor
+@AllArgsConstructor
 @ToString
+@Builder
+@Entity
 public class User {
     @Id
     @GeneratedValue(strategy=GenerationType.UUID)

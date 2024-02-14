@@ -65,7 +65,7 @@ public class TournamentService {
             throw new IllegalArgumentException("User has already entered the tournament");
 
         TournamentGroup tournamentGroup = tournamentGroupRepository
-                .findByTournamentAndUserTournamentGroups_User_CountryNot(tournament, user.getCountry())
+                .findHasNoUsersWithCountry(tournament, user.getCountry())
                 .orElse(new TournamentGroup(tournament));
 
         if (tournamentGroup.getUserTournamentGroups().size() >= TOURNAMENT_GROUP_SIZE) {
@@ -77,7 +77,7 @@ public class TournamentService {
                 new UserTournamentGroup(
                         user,
                         tournamentGroup,
-                        tournamentGroup.getUserTournamentGroups().size() + 1
+                        tournamentGroup.getUserTournamentGroups().size() + 1  // TODO: implement same ranking for same scores
                 );
         userTournamentGroup.setEnteredAt(Date.from(Instant.now()));
         userTournamentGroupRepository.save(userTournamentGroup);
@@ -115,7 +115,7 @@ public class TournamentService {
             Optional<UserTournamentGroup> userTournamentGroup = userTournamentGroupRepository
                     .findByUserIdAndTournamentId(user.getId(), tournament.getId());
             return userTournamentGroup.isPresent() && userTournamentGroup.get().getTournamentGroup().getStartDate() != null;
-        } catch (ObjectNotFoundException e) {
+        } catch (IllegalArgumentException e) {
             return false;
         }
     }
@@ -157,7 +157,7 @@ public class TournamentService {
                     userTournamentGroup.getRanking() - 1)
                     .orElseThrow(() -> new ObjectNotFoundException(userTournamentGroup.getRanking() - 1, UserTournamentGroup.class.getName()));
 
-            if (rival.getScore() < userTournamentGroup.getScore()) {
+            if (rival.getScore() < userTournamentGroup.getScore() + 1) {
                 userTournamentGroup.setRanking(userTournamentGroup.getRanking() - 1);
                 rival.setRanking(rival.getRanking() + 1);
                 userTournamentGroupRepository.save(rival);
