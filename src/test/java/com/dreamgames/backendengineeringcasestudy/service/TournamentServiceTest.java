@@ -73,7 +73,7 @@ class TournamentServiceTest {
                 .findByUserIdAndTournamentId(user.getId(), tournament.getId()))
                 .willReturn(Optional.empty());
         given(tournamentGroupRepository
-                .findByTournamentAndUserTournamentGroups_User_CountryNot(tournament, user.getCountry()))
+                .findHasNotUserWithCountryInTournament(tournament, user.getCountry()))
                 .willReturn(Optional.empty());
         given(tournamentGroupRepository.save(any(TournamentGroup.class))).willReturn(tournamentGroup);
 
@@ -111,7 +111,7 @@ class TournamentServiceTest {
                 .findByUserIdAndTournamentId(user.getId(), tournament.getId()))
                 .willReturn(Optional.empty());
         given(tournamentGroupRepository
-                .findByTournamentAndUserTournamentGroups_User_CountryNot(tournament, user.getCountry()))
+                .findHasNotUserWithCountryInTournament(tournament, user.getCountry()))
                 .willReturn(Optional.of(tournamentGroup));
         given(tournamentGroupRepository.save(any(TournamentGroup.class))).willReturn(tournamentGroup);
 
