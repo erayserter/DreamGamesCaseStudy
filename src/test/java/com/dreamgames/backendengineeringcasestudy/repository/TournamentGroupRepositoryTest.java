@@ -29,12 +29,13 @@ class TournamentGroupRepositoryTest {
     @Autowired
     private TournamentGroupRepository underTest;
 
+    private Country country;
     private Tournament tournament;
     private TournamentGroup tournamentGroup;
 
     @BeforeEach
     void setUp() {
-        Country country = new Country("TR", "Turkey");
+        country = new Country("TR", "Turkey");
         User user = User.builder()
                 .id(UUID.randomUUID())
                 .country(country)
@@ -87,7 +88,6 @@ class TournamentGroupRepositoryTest {
     @Test
     void findHasNotUserWithCountryInTournamentWithSameCountry() {
         // given
-        Country country = new Country("TR", "Turkey");
         User anotherUser = User.builder()
                 .id(UUID.randomUUID())
                 .country(country)
@@ -100,8 +100,6 @@ class TournamentGroupRepositoryTest {
         Optional<TournamentGroup> expected = underTest.findHasNotUserWithCountryInTournament(tournament, anotherUser.getCountry());
 
         // then
-        assertThat(expected).isPresent();
-        TournamentGroup expectedTournamentGroup = expected.get();
-        assertThat(expectedTournamentGroup.getId()).isNotEqualTo(tournamentGroup.getId());
+        assertThat(expected).isEmpty();
     }
 }
