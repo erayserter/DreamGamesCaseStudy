@@ -1,0 +1,193 @@
+{
+	"info": {
+		"_postman_id": "74e91636-7608-419e-a548-3fd994a9a96f",
+		"name": "Dream Games",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "21189706"
+	},
+	"item": [
+		{
+			"name": "user",
+			"item": [
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "localhost:8080/users",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Progress User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "localhost:8080/users/c3311cab-a4a7-4685-96c0-dd7525f4b715/updateLevel",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users",
+								"c3311cab-a4a7-4685-96c0-dd7525f4b715",
+								"updateLevel"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "tournament",
+			"item": [
+				{
+					"name": "Enter Tournament",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"c3311cab-a4a7-4685-96c0-dd7525f4b715\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8080/tournaments/enter",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"tournaments",
+								"enter"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Claim Reward",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"c3311cab-a4a7-4685-96c0-dd7525f4b715\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8080/tournaments/1/claim-reward",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"tournaments",
+								"1",
+								"claim-reward"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "leaderboard",
+			"item": [
+				{
+					"name": "Get Group Rank",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:8080/leaderboard/group-rank?user_id=c3311cab-a4a7-4685-96c0-dd7525f4b715&tournament_id=1",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"leaderboard",
+								"group-rank"
+							],
+							"query": [
+								{
+									"key": "user_id",
+									"value": "c3311cab-a4a7-4685-96c0-dd7525f4b715"
+								},
+								{
+									"key": "tournament_id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group Leaderboard",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:8080/leaderboard/group-leaderboard?user_id=c3311cab-a4a7-4685-96c0-dd7525f4b715",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"leaderboard",
+								"group-leaderboard"
+							],
+							"query": [
+								{
+									"key": "user_id",
+									"value": "c3311cab-a4a7-4685-96c0-dd7525f4b715"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Country Leaderboard",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:8080/leaderboard/country-leaderboard",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"leaderboard",
+								"country-leaderboard"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
