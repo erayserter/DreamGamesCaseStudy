@@ -52,6 +52,7 @@ class TournamentServiceTest {
         user = User.builder().id(UUID.randomUUID()).country(country).level(20).coins(1000).build();
         tournament = Tournament.builder().id(1L).entryFee(1000).groupSizes(5).levelRequirement(20).build();
         tournamentGroup = new TournamentGroup(tournament);
+        tournament.setGroups(List.of(tournamentGroup));
         userTournamentGroup = new UserTournamentGroup(user, tournamentGroup);
     }
 
@@ -477,5 +478,64 @@ class TournamentServiceTest {
 
         // then
         verify(tournamentRepository, never()).save(any(Tournament.class));
+    }
+
+    @Test
+    void shouldCleanupDailyTournament() {
+        // given
+        TournamentService spy = Mockito.spy(underTest);
+
+        tournamentGroup.setStartDate(Date.from(Instant.now()));
+        List<UserTournamentGroup> scores = List.of(userTournamentGroup);
+
+        doReturn(tournament).when(spy).getCurrentTournament();
+        given(userTournamentGroupRepository.orderGroupByScores(tournamentGroup.getId())).willReturn(scores);
+        given(rewardBucketRepository.findRewardBucketByRank(any(Long.class), any(Integer.class)))
+                .willReturn(Optional.of(new RewardBucket()));
+
+        // when
+        spy.cleanupDailyTournament();
+
+        // then
+        verify(userTournamentGroupRepository).saveAll(scores);
+        assertThat(userTournamentGroup.isHasReward()).isTrue();
+    }
+
+    @Test
+    void shouldCleanupDailyTournamentDoNothingWhenNoRewards() {
+        // given
+        TournamentService spy = Mockito.spy(underTest);
+
+        tournamentGroup.setStartDate(Date.from(Instant.now()));
+        List<UserTournamentGroup> scores = List.of(userTournamentGroup);
+
+        doReturn(tournament).when(spy).getCurrentTournament();
+        given(userTournamentGroupRepository.orderGroupByScores(tournamentGroup.getId())).willReturn(scores);
+        given(rewardBucketRepository.findRewardBucketByRank(any(Long.class), any(Integer.class)))
+                .willReturn(Optional.empty());
+
+        // when
+        spy.cleanupDailyTournament();
+
+        // then
+        verify(userTournamentGroupRepository).saveAll(scores);
+        assertThat(userTournamentGroup.isHasReward()).isFalse();
+    }
+
+    @Test
+    void shouldCleanupDailyTournamentDoNothingWhenGroupNotStarted() {
+        // given
+        TournamentService spy = Mockito.spy(underTest);
+
+        List<UserTournamentGroup> scores = List.of(userTournamentGroup);
+
+        doReturn(tournament).when(spy).getCurrentTournament();
+
+        // when
+        spy.cleanupDailyTournament();
+
+        // then
+        verify(userTournamentGroupRepository, never()).saveAll(scores);
+        assertThat(userTournamentGroup.isHasReward()).isFalse();
     }
 }

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface RewardBucketRepository extends JpaRepository<Country, Integer> {
+public interface RewardBucketRepository extends JpaRepository<RewardBucket, Integer> {
 
     @Query("SELECT rb " +
             "FROM RewardBucket as rb " +

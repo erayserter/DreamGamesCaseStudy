@@ -42,6 +42,4 @@ public interface UserTournamentGroupRepository extends JpaRepository<UserTournam
             "GROUP BY utg.user.country.name " +
             "ORDER BY SUM(utg.score) DESC")
     List<CountryTournamentScoreResponse> findCountryScoresByTournamentId(Long tournamentId);
-
-    List<UserTournamentGroup> findByTournamentGroup_Tournament_Id(Long tournamentId);
 }
