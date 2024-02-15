@@ -64,7 +64,6 @@ class TournamentServiceTest {
         given(userTournamentGroupRepository
                 .findPreviousUnclaimedTournamentRewards(
                         any(UUID.class),
-                        any(Boolean.class),
                         any(Date.class)
                 ))
                 .willReturn(List.of());
@@ -103,7 +102,6 @@ class TournamentServiceTest {
         given(userTournamentGroupRepository
                 .findPreviousUnclaimedTournamentRewards(
                         any(UUID.class),
-                        any(Boolean.class),
                         any(Date.class)
                 ))
                 .willReturn(List.of());
@@ -180,7 +178,6 @@ class TournamentServiceTest {
         given(userTournamentGroupRepository
                 .findPreviousUnclaimedTournamentRewards(
                         any(UUID.class),
-                        any(Boolean.class),
                         any(Date.class)
                 ))
                 .willReturn(List.of(userTournamentGroup));
@@ -201,7 +198,6 @@ class TournamentServiceTest {
         given(userTournamentGroupRepository
                 .findPreviousUnclaimedTournamentRewards(
                         any(UUID.class),
-                        any(Boolean.class),
                         any(Date.class)
                 ))
                 .willReturn(List.of());
@@ -340,7 +336,7 @@ class TournamentServiceTest {
         RewardBucket rewardBucket = RewardBucket.builder().startRank(rank).endRank(rank).rewardAmount(reward).build();
 
         given(userTournamentGroupRepository.orderGroupByScores(tournamentGroup.getId())).willReturn(scores);
-        given(rewardBucketRepository.findRewardBucketByRank(rank)).willReturn(Optional.of(rewardBucket));
+        given(rewardBucketRepository.findRewardBucketByRank(tournament.getId(), rank)).willReturn(Optional.of(rewardBucket));
 
         // when
         int result = underTest.calculateReward(userTournamentGroup);
@@ -357,7 +353,7 @@ class TournamentServiceTest {
             scores.add(new UserTournamentGroup(null, tournamentGroup));
         }
         given(userTournamentGroupRepository.orderGroupByScores(tournamentGroup.getId())).willReturn(scores);
-        given(rewardBucketRepository.findRewardBucketByRank(any(Integer.class))).willReturn(Optional.empty());
+        given(rewardBucketRepository.findRewardBucketByRank(any(Long.class), any(Integer.class))).willReturn(Optional.empty());
 
         // when
         // then

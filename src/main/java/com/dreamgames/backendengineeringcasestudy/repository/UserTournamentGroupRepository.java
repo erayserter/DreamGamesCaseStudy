@@ -23,10 +23,11 @@ public interface UserTournamentGroupRepository extends JpaRepository<UserTournam
     @Query("SELECT utg " +
             "FROM UserTournamentGroup utg " +
             "WHERE utg.user.id = :userId " +
-            "AND utg.isRewardClaimed = :isRewardClaimed " +
-            "AND utg.tournamentGroup.tournament.endDateTime < :date")
+            "AND utg.hasReward = true " +
+            "AND utg.isRewardClaimed = false " +
+            "AND utg.tournamentGroup.tournament.endDateTime < :date " +
+            "AND utg.tournamentGroup.startDate IS NOT NULL ")
     List<UserTournamentGroup> findPreviousUnclaimedTournamentRewards(@Param("userId") UUID userId,
-                                                                     @Param("isRewardClaimed") boolean isRewardClaimed,
                                                                      @Param("date") Date date);
 
     @Query("SELECT utg " +
@@ -41,4 +42,6 @@ public interface UserTournamentGroupRepository extends JpaRepository<UserTournam
             "GROUP BY utg.user.country.name " +
             "ORDER BY SUM(utg.score) DESC")
     List<CountryTournamentScoreResponse> findCountryScoresByTournamentId(Long tournamentId);
+
+    List<UserTournamentGroup> findByTournamentGroup_Tournament_Id(Long tournamentId);
 }

@@ -14,7 +14,8 @@ public interface RewardBucketRepository extends JpaRepository<Country, Integer> 
 
     @Query("SELECT rb " +
             "FROM RewardBucket as rb " +
-            "WHERE rb.startRank <= :rank " +
+            "WHERE rb.tournament.id = :tournamentId " +
+            "AND rb.startRank <= :rank " +
             "AND rb.endRank >= :rank")
-    Optional<RewardBucket> findRewardBucketByRank(@Param("rank") int rank);
+    Optional<RewardBucket> findRewardBucketByRank(@Param("tournamentId") Long tournamentId, @Param("rank") int rank);
 }

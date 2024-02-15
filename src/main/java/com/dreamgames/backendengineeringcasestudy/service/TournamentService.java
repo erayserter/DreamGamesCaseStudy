@@ -50,7 +50,7 @@ public class TournamentService {
             throw new BadRequestException("User does not have enough coins to enter the tournament");
 
         List<UserTournamentGroup> unclaimedRewards = userTournamentGroupRepository
-                .findPreviousUnclaimedTournamentRewards(userId, false, Date.from(Instant.now()));
+                .findPreviousUnclaimedTournamentRewards(userId, Date.from(Instant.now()));
 
         if (!unclaimedRewards.isEmpty())
             throw new BadRequestException("User has unclaimed rewards");
@@ -110,8 +110,9 @@ public class TournamentService {
                 .orderGroupByScores(userTournamentGroup.getTournamentGroup().getId());
         int rank = scores.indexOf(userTournamentGroup) + 1;
 
+        Long tournamentId = userTournamentGroup.getTournamentGroup().getTournament().getId();
         RewardBucket rewardBucket = rewardBucketRepository
-                .findRewardBucketByRank(rank)
+                .findRewardBucketByRank(tournamentId, rank)
                 .orElseThrow(() -> new BadRequestException("User is not eligible for a reward"));
 
         return rewardBucket.getRewardAmount();
@@ -170,5 +171,24 @@ public class TournamentService {
         RewardBucket.builder().tournament(tournament).startRank(2).endRank(2).rewardAmount(secondPlaceReward).build();
 
         tournamentRepository.save(tournament);
+    }
+
+    @Scheduled(cron = "59 19 * * * *")
+    public void cleanupDailyTournament() {
+        Tournament tournament = getCurrentTournament();
+
+        for (TournamentGroup tournamentGroup : tournament.getGroups()) {
+            if (tournamentGroup.getStartDate() != null) {
+                List<UserTournamentGroup> scores = userTournamentGroupRepository
+                        .orderGroupByScores(tournamentGroup.getId());
+                for (int rank = 1; rank <= scores.size(); rank++) {
+                    Optional<RewardBucket> rewardBucket = rewardBucketRepository
+                            .findRewardBucketByRank(tournament.getId(), rank);
+                    if (rewardBucket.isPresent())
+                        scores.get(rank - 1).setHasReward(true);
+                }
+                userTournamentGroupRepository.saveAll(scores);
+            }
+        }
     }
 }

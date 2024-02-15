@@ -94,15 +94,16 @@ class UserTournamentGroupRepositoryTest {
                 .build();
         tournament = tournamentRepository.save(tournament);
         TournamentGroup tournamentGroup = new TournamentGroup(tournament);
+        tournamentGroup.setStartDate(Date.from(start.toInstant()));
         tournamentGroup = tournamentGroupRepository.save(tournamentGroup);
         UserTournamentGroup userTournamentGroup = new UserTournamentGroup(user, tournamentGroup);
+        userTournamentGroup.setHasReward(true);
         underTest.save(userTournamentGroup);
 
         // when
         List<UserTournamentGroup> expected =
                 underTest.findPreviousUnclaimedTournamentRewards(
                         user.getId(),
-                        false,
                         Date.from(now.toInstant())
                 );
 
@@ -120,7 +121,6 @@ class UserTournamentGroupRepositoryTest {
         List<UserTournamentGroup> expected =
                 underTest.findPreviousUnclaimedTournamentRewards(
                         user.getId(),
-                        false,
                         Date.from(Instant.now())
                 );
 

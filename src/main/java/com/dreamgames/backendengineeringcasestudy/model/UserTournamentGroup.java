@@ -27,6 +27,8 @@ public class UserTournamentGroup {
 
     private int score = 0;
 
+    private boolean hasReward = false;
+
     private boolean isRewardClaimed = false;
 
     @Temporal(TemporalType.TIMESTAMP)
