@@ -1,6 +1,5 @@
 package com.dreamgames.backendengineeringcasestudy.repository;
 
-import com.dreamgames.backendengineeringcasestudy.model.Country;
 import com.dreamgames.backendengineeringcasestudy.model.RewardBucket;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
