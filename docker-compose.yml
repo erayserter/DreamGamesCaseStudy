@@ -11,6 +11,9 @@ services:
       - '8080:8080'
     networks:
       - 'local-network'
+    depends_on:
+      - mysqldb
+    restart: always
 
   mysqldb:
     image: mysql:8.0.28-oracle
